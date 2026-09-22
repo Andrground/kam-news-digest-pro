@@ -1,0 +1,62 @@
+[project]
+name = "kamnews"
+version = "0.1.0"
+description = "KAM News Digest — briefings de notícias corporativas para Key Account Managers"
+authors = [
+    {name = "Anderson Souza",email = "ander.souza43@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12,<4.0"
+dependencies = [
+   "fastapi[standard] (>=0.115.12,<0.116.0)",
+   "pydantic-settings (>=2.9.1,<3.0.0)",
+   "httpx (>=0.27.0,<1.0.0)",
+   "sqlalchemy (>=2.0.41,<3.0.0)",
+   "alembic (>=1.16.1,<2.0.0)",
+   "psycopg[binary] (>=3.2.9,<4.0.0)",
+   "pyjwt (>=2.10.1,<3.0.0)",
+   "pwdlib[argon2] (>=0.2.1,<0.3.0)",
+   "email-validator (>=2.0.0,<3.0.0)",
+]
+
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.11.10"
+pytest = "^8.3.5"
+pytest-cov = "^6.1.1"
+taskipy = "^1.14.1"
+testcontainers = "^4.10.0"
+
+[tool.ruff]
+line-length = 79
+extend-exclude = ['migrations']
+
+[tool.ruff.lint]
+preview = true
+select = ['I', 'F', 'E', 'W', 'PL', 'PT']
+
+[tool.ruff.format]
+preview = true
+quote-style = 'single'
+
+[tool.pytest.ini_options]
+pythonpath = "src"
+addopts = '-p no:warnings'
+
+[tool.taskipy.tasks]
+lint = 'ruff check'
+pre_format = 'ruff check --fix'
+format = 'ruff format'
+run = 'fastapi dev src/kamnews/app.py'
+migrate = 'alembic upgrade head'
+revision = 'alembic revision --autogenerate -m'
+seed = 'PYTHONPATH=src python -m kamnews.seed'
+pre_test = 'task lint'
+test = 'pytest -s -x --cov=src/kamnews -vv'
+post_test = 'coverage html'
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

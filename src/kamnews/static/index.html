@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KAM News Digest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0a0b0e; --panel:#13151b; --panel-2:#181b22; --border:#272c36;
+  --text:#ece8df; --muted:#8b919d; --faint:#5b616c;
+  --accent:#5b9df2; --accent-soft:rgba(91,157,242,0.13);
+  --green:#5ee0a4; --gold:#e0b15e; --blue:#6aa8f5; --violet:#c08bf0; --red:#f08a8a;
+}
+*{ box-sizing:border-box; }
+body{ margin:0; background:var(--ink); color:var(--text); font-family:'Archivo',sans-serif; -webkit-font-smoothing:antialiased; }
+.bg{ position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:radial-gradient(900px 500px at 78% -8%, rgba(91,157,242,0.12), transparent 60%),
+             radial-gradient(700px 500px at 0% 100%, rgba(106,168,245,0.07), transparent 55%); }
+.wrap{ position:relative; z-index:1; max-width:1080px; margin:0 auto; padding:38px 22px 60px; }
+
+.masthead{ text-align:center; border-bottom:1px solid var(--border); padding-bottom:22px; margin-bottom:30px; }
+.masthead-top{ display:flex; justify-content:space-between; border-top:1px solid var(--border); border-bottom:1px solid var(--border); padding:7px 2px; }
+.kicker{ font-size:10.5px; letter-spacing:.22em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+.title{ font-family:'Newsreader',serif; font-weight:500; font-size:clamp(38px,7vw,62px); letter-spacing:-.01em; margin:18px 0 14px; line-height:1; }
+.masthead-bottom{ display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; }
+.edition{ font-size:12px; color:var(--muted); font-style:italic; font-family:'Newsreader',serif; }
+.dot-sep{ color:var(--accent); }
+
+.panel{ background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:20px 22px; margin-bottom:24px; }
+.panel-label{ font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); font-weight:600; margin-bottom:11px; }
+.panel-label-row{ display:flex; justify-content:space-between; align-items:center; margin-top:20px; }
+.select-all{ background:none; border:none; color:var(--accent); font-family:inherit; font-size:11px; font-weight:600; cursor:pointer; }
+.select-all:hover{ text-decoration:underline; }
+
+.desks{ display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; }
+.desk{ display:flex; flex-direction:column; gap:3px; text-align:left; background:var(--panel-2); border:1px solid var(--border); border-radius:10px; padding:13px 15px; cursor:pointer; transition:all .16s ease; font-family:inherit; }
+.desk:hover{ border-color:#3a414e; transform:translateY(-1px); }
+.desk.active{ border-color:var(--accent); background:var(--accent-soft); }
+.desk-name{ font-family:'Newsreader',serif; font-size:19px; font-weight:600; color:var(--text); }
+.desk.active .desk-name{ color:var(--accent); }
+.desk-count{ font-size:11px; color:var(--muted); }
+
+.chips{ display:flex; flex-wrap:wrap; gap:8px; }
+.chip{ display:inline-flex; align-items:center; gap:8px; background:var(--panel-2); border:1px solid var(--border); border-radius:8px; padding:8px 12px 8px 9px; font-size:13px; color:var(--text); cursor:pointer; transition:all .14s ease; font-family:inherit; }
+.chip:hover{ border-color:#3a414e; }
+.chip.on{ border-color:var(--accent); background:var(--accent-soft); }
+.chip-box{ width:16px; height:16px; border-radius:4px; border:1.5px solid var(--faint); display:inline-flex; align-items:center; justify-content:center; color:var(--ink); flex:0 0 auto; font-size:11px; font-weight:700; }
+.chip.on .chip-box{ background:var(--accent); border-color:var(--accent); }
+
+.actions{ display:flex; gap:12px; align-items:center; margin-top:22px; flex-wrap:wrap; }
+.btn-primary{ display:inline-flex; align-items:center; gap:9px; background:var(--accent); color:#08111f; border:none; border-radius:9px; padding:12px 22px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; transition:all .15s ease; }
+.btn-primary:hover{ filter:brightness(1.07); transform:translateY(-1px); }
+.btn-primary:disabled{ opacity:.4; cursor:default; transform:none; filter:none; }
+.btn-ghost{ display:inline-flex; align-items:center; gap:7px; background:none; border:1px solid var(--border); border-radius:9px; padding:11px 16px; color:var(--muted); font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; transition:all .15s ease; }
+.btn-ghost:hover{ color:var(--text); border-color:#3a414e; }
+.btn-export{ display:inline-flex; align-items:center; gap:7px; background:rgba(94,224,164,.1); border:1px solid rgba(94,224,164,.35); border-radius:9px; padding:11px 16px; color:#7ce6b3; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; transition:all .15s ease; }
+.btn-export:hover{ background:rgba(94,224,164,.18); border-color:rgba(94,224,164,.6); transform:translateY(-1px); }
+.btn-export:disabled{ opacity:.6; cursor:default; transform:none; }
+.export-msg{ margin:12px 0 0; font-size:12px; color:var(--muted); }
+
+.progress{ display:flex; align-items:center; gap:14px; margin-bottom:22px; }
+.progress-bar{ flex:1; height:4px; background:var(--panel-2); border-radius:99px; overflow:hidden; }
+.progress-fill{ height:100%; background:linear-gradient(90deg,var(--accent),#a9c9f7); border-radius:99px; transition:width .4s ease; width:0; }
+.progress-text{ font-size:12px; color:var(--muted); white-space:nowrap; }
+
+.results{ display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:18px; }
+.card{ background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:20px 21px; animation:rise .45s cubic-bezier(.2,.7,.3,1) both; }
+@keyframes rise{ from{ opacity:0; transform:translateY(12px); } to{ opacity:1; transform:none; } }
+.card-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; padding-bottom:13px; border-bottom:1px solid var(--border); }
+.company{ font-family:'Newsreader',serif; font-size:22px; font-weight:600; line-height:1.1; margin:0; }
+.status{ display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:600; white-space:nowrap; padding:4px 9px; border-radius:99px; }
+.status-loading{ color:var(--accent); background:var(--accent-soft); }
+.status-ok{ color:#5ee0a4; background:rgba(94,224,164,.1); }
+.status-none{ color:var(--muted); background:rgba(139,145,157,.1); }
+.status-error{ color:#f08a8a; background:rgba(240,138,138,.1); }
+
+.headline{ background:var(--panel-2); border-left:3px solid var(--accent); border-radius:0 9px 9px 0; padding:12px 15px; margin-bottom:13px; }
+.headline-tag{ font-size:9.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--accent); font-weight:700; }
+.headline-text{ font-family:'Newsreader',serif; font-size:16.5px; line-height:1.35; margin:5px 0 0; font-weight:500; }
+.summary{ font-size:13px; line-height:1.55; color:var(--muted); margin:0 0 16px; }
+.no-news{ font-size:13px; color:var(--muted); font-style:italic; font-family:'Newsreader',serif; margin:4px 0 0; }
+
+.themes{ display:flex; flex-direction:column; gap:15px; }
+.theme-head{ display:inline-flex; align-items:center; gap:7px; font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; margin-bottom:7px; }
+.theme-dot{ width:8px; height:8px; border-radius:50%; display:inline-block; }
+.bullets{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:9px; }
+.bullets li{ position:relative; padding-left:15px; }
+.bullets li::before{ content:''; position:absolute; left:0; top:7px; width:5px; height:5px; border-radius:99px; background:var(--b); }
+.bullet-text{ font-size:13.5px; line-height:1.5; display:block; }
+.bullet-meta{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:4px; }
+.src{ font-size:11px; color:var(--muted); font-weight:600; }
+.src-date{ font-size:11px; color:var(--faint); }
+.src-link{ display:inline-flex; align-items:center; gap:3px; font-size:11px; color:var(--accent); text-decoration:none; }
+.src-link:hover{ text-decoration:underline; }
+
+.skeleton{ height:11px; border-radius:5px; background:linear-gradient(90deg,var(--panel-2) 25%,#22262f 50%,var(--panel-2) 75%); background-size:200% 100%; animation:shimmer 1.3s infinite; margin-bottom:9px; }
+@keyframes shimmer{ from{ background-position:200% 0; } to{ background-position:-200% 0; } }
+.err-msg{ font-size:13px; color:#f0a8a8; margin:0; }
+.btn-retry{ display:inline-flex; align-items:center; gap:6px; margin-top:12px; background:rgba(240,138,138,.1); border:1px solid rgba(240,138,138,.35); border-radius:8px; padding:7px 13px; color:#f0a8a8; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; }
+.btn-retry:hover{ background:rgba(240,138,138,.18); }
+
+.empty{ text-align:center; color:var(--muted); padding:50px 20px; }
+.empty p{ font-family:'Newsreader',serif; font-size:15px; font-style:italic; margin:0; }
+.foot{ margin-top:34px; padding-top:18px; border-top:1px solid var(--border); font-size:11.5px; color:var(--faint); text-align:center; line-height:1.5; }
+.spin{ display:inline-block; width:14px; height:14px; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:spin .9s linear infinite; }
+@keyframes spin{ to{ transform:rotate(360deg); } }
+
+/* ---------- Login ---------- */
+.login-panel{ max-width:380px; margin:0 auto; }
+.login-panel .form-row{ flex-direction:column; align-items:stretch; }
+.login-panel .btn-primary{ justify-content:center; }
+
+/* ---------- Abas ---------- */
+.tabs{ display:flex; gap:6px; margin-bottom:26px; border-bottom:1px solid var(--border); }
+.tab{ background:none; border:none; border-bottom:2px solid transparent; padding:10px 16px; margin-bottom:-1px; color:var(--muted); font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; transition:all .15s ease; }
+.tab:hover{ color:var(--text); }
+.tab.active{ color:var(--accent); border-bottom-color:var(--accent); }
+
+/* ---------- Formulários ---------- */
+.form-row{ display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
+.input, .select{ flex:1; min-width:170px; background:var(--panel-2); border:1px solid var(--border); border-radius:9px; padding:11px 13px; color:var(--text); font-family:inherit; font-size:13.5px; }
+.input:focus, .select:focus{ outline:none; border-color:var(--accent); }
+.input::placeholder{ color:var(--faint); }
+.select{ flex:0 0 auto; min-width:150px; }
+
+/* ---------- Listas de cadastro ---------- */
+.list{ display:flex; flex-direction:column; gap:8px; }
+.list-row{ display:flex; align-items:center; gap:10px; background:var(--panel-2); border:1px solid var(--border); border-radius:10px; padding:11px 14px; cursor:pointer; transition:all .14s ease; }
+.list-row:hover{ border-color:#3a414e; }
+.list-row.active{ border-color:var(--accent); background:var(--accent-soft); }
+.list-row.inativo .list-name{ color:var(--faint); text-decoration:line-through; }
+.list-main{ flex:1; min-width:0; }
+.list-name{ font-size:13.5px; display:block; }
+.list-sub{ font-size:11px; color:var(--faint); display:block; margin-top:2px; }
+.list-empty{ font-size:12.5px; color:var(--faint); font-style:italic; padding:6px 2px; }
+.badge{ font-size:9.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:3px 8px; border-radius:99px; white-space:nowrap; }
+.badge-ativo{ color:#5ee0a4; background:rgba(94,224,164,.1); }
+.badge-inativo{ color:var(--muted); background:rgba(139,145,157,.12); }
+.badge-role{ color:var(--accent); background:var(--accent-soft); }
+.row-actions{ display:flex; gap:6px; flex-shrink:0; }
+.btn-mini{ background:none; border:1px solid var(--border); border-radius:7px; padding:5px 10px; color:var(--muted); font-family:inherit; font-size:11px; font-weight:600; cursor:pointer; transition:all .14s ease; }
+.btn-mini:hover{ color:var(--text); border-color:#3a414e; }
+.btn-danger{ color:#f0a8a8; border-color:rgba(240,138,138,.35); }
+.btn-danger:hover{ color:#f0a8a8; background:rgba(240,138,138,.15); border-color:rgba(240,138,138,.6); }
+.hint{ font-size:11px; color:var(--faint); font-weight:400; text-transform:none; letter-spacing:0; }
+.cad-msg{ font-size:12.5px; color:var(--muted); margin:14px 0 0; }
+.cad-msg.err{ color:#f0a8a8; }
+.me-label{ font-size:12px; color:var(--muted); }
+
+@media (max-width:560px){ .results{ grid-template-columns:1fr; } .desks{ grid-template-columns:repeat(2,1fr); } .tabs{ overflow-x:auto; } .row-actions{ flex-wrap:wrap; } }
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="wrap">
+  <header class="masthead">
+    <div class="masthead-top">
+      <span class="kicker">Inteligência de Contas-Chave</span>
+      <span class="kicker">Briefing – últimos 30 dias</span>
+    </div>
+    <h1 class="title">KAM News Digest</h1>
+    <div class="masthead-bottom">
+      <span class="edition" id="edition"></span>
+      <span class="dot-sep">•</span>
+      <span class="edition">Resultados · M&amp;A · Expansão · Liderança · Regulatório</span>
+      <span class="dot-sep" id="meSep" style="display:none">•</span>
+      <span class="me-label" id="meLabel" style="display:none"></span>
+      <button class="btn-mini" id="logoutBtn" style="display:none">Sair</button>
+    </div>
+  </header>
+
+  <!-- Tela de login: bloqueia tudo até autenticar. -->
+  <section class="panel login-panel" id="loginView">
+    <div class="panel-label">Entrar</div>
+    <div class="form-row">
+      <input class="input" id="loginEmail" type="email" autocomplete="username" placeholder="E-mail">
+    </div>
+    <div class="form-row">
+      <input class="input" id="loginSenha" type="password" autocomplete="current-password" placeholder="Senha">
+    </div>
+    <button class="btn-primary" id="loginBtn">Entrar</button>
+    <p class="cad-msg" id="loginMsg" style="display:none"></p>
+  </section>
+
+  <div id="appView" style="display:none">
+
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-tab="digest">Digest</button>
+    <button class="tab" data-tab="cadastro">Cadastro</button>
+    <button class="tab" data-tab="usuarios" id="tabUsuarios" style="display:none">Usuários</button>
+  </nav>
+
+  <div class="tab-panel" id="tab-digest">
+
+  <section class="panel">
+    <div class="panel-label">Carteira</div>
+    <div class="desks" id="desks"></div>
+
+    <div class="panel-label panel-label-row">
+      <span>Clientes</span>
+      <button class="select-all" id="selectAll">Selecionar todas</button>
+    </div>
+    <div class="chips" id="chips"></div>
+
+    <div class="actions">
+      <button class="btn-primary" id="searchBtn" disabled>Buscar notícias</button>
+      <button class="btn-ghost" id="resetBtn" style="display:none">Nova busca</button>
+      <button class="btn-export" id="exportBtn" style="display:none">Exportar Word</button>
+    </div>
+    <p class="export-msg" id="exportMsg" style="display:none"></p>
+  </section>
+
+  <div class="progress" id="progress" style="display:none">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <span class="progress-text" id="progressText"></span>
+  </div>
+
+  <section class="results" id="results"></section>
+
+  <div class="empty" id="empty"><p>Carregando carteiras…</p></div>
+
+  </div><!-- /tab-digest -->
+
+  <div class="tab-panel" id="tab-cadastro" style="display:none">
+    <section class="panel">
+      <div class="panel-label">Carteiras</div>
+      <div class="form-row">
+        <input class="input" id="carteiraNome" type="text" maxlength="80" placeholder="Nome da carteira">
+        <button class="btn-primary" id="carteiraAdd">Adicionar</button>
+      </div>
+      <div class="list" id="carteiraList"></div>
+    </section>
+
+    <section class="panel" id="vinculosPanel" style="display:none">
+      <div class="panel-label panel-label-row">
+        <span>Clientes de <b id="vinculoNome"></b></span>
+        <span class="hint" id="vinculoHint"></span>
+      </div>
+      <div class="chips" id="vinculoChips"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-label">Key accounts</div>
+      <div class="form-row">
+        <input class="input" id="keyNome" type="text" maxlength="120" placeholder="Nome do cliente">
+        <button class="btn-primary" id="keyAdd">Adicionar</button>
+      </div>
+      <div class="list" id="keyList"></div>
+    </section>
+
+    <p class="cad-msg" id="cadMsg" style="display:none"></p>
+  </div>
+
+  <div class="tab-panel" id="tab-usuarios" style="display:none">
+    <section class="panel">
+      <div class="panel-label panel-label-row">
+        <span id="userFormLabel">Novo usuário</span>
+        <button class="select-all" id="userCancel" style="display:none">Cancelar edição</button>
+      </div>
+      <div class="form-row">
+        <input class="input" id="userNome" type="text" maxlength="80" placeholder="Usuário">
+        <input class="input" id="userEmail" type="email" maxlength="120" placeholder="E-mail">
+      </div>
+      <div class="form-row">
+        <input class="input" id="userSenha" type="password" autocomplete="new-password" placeholder="Senha">
+        <select class="select" id="userRole"></select>
+        <button class="btn-primary" id="userSave">Adicionar</button>
+      </div>
+      <div class="list" id="userList"></div>
+      <p class="cad-msg" id="userMsg" style="display:none"></p>
+    </section>
+  </div>
+
+  </div><!-- /appView -->
+
+  <footer class="foot" id="foot" style="display:none">As notícias são recuperadas em tempo real via busca na web. Confirme datas e fontes antes de usar em contato com o cliente.</footer>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script>
+$(function () {
+  "use strict";
+
+  var PORTFOLIOS = {};   // carregado de GET /portfolios/
+  var THEME_ORDER = ["resultados_financeiros","m_a","expansao","lideranca","regulatorio"];
+  var THEME_META = {
+    resultados_financeiros: { label:"Resultados financeiros", color:"var(--green)" },
+    m_a: { label:"M&A", color:"var(--gold)" },
+    expansao: { label:"Expansão", color:"var(--blue)" },
+    lideranca: { label:"Liderança", color:"var(--violet)" },
+    regulatorio: { label:"Regulatório", color:"var(--red)" }
+  };
+  var WORD_THEME = {
+    resultados_financeiros: { label:"Resultados financeiros", color:"#1f9d57" },
+    m_a: { label:"M&A", color:"#b07d22" },
+    expansao: { label:"Expansão", color:"#2563c9" },
+    lideranca: { label:"Liderança", color:"#8636c4" },
+    regulatorio: { label:"Regulatório", color:"#cc3d3d" }
+  };
+
+  var state = { portfolio:null, selected:{}, results:{}, phase:"idle", running:false, exporting:false };
+
+  var TOKEN_KEY = "kamnews_token";
+  var ROLE_ADMIN = "Administrador";
+  var me = null;
+  var activeTab = "digest";
+  var cad = { carteiras:[], keys:[], users:[], roles:[], selId:null, editUserId:null, busy:false, dirty:false };
+
+  function token(){ try { return localStorage.getItem(TOKEN_KEY); } catch(e){ return null; } }
+  function setToken(v){
+    try { if (v) localStorage.setItem(TOKEN_KEY, v); else localStorage.removeItem(TOKEN_KEY); } catch(e){}
+  }
+  function isAdmin(){ return !!(me && me.role && me.role.nome === ROLE_ADMIN); }
+
+  var dateStr = new Date().toLocaleDateString("pt-BR",{ weekday:"long", day:"numeric", month:"long", year:"numeric" });
+  $("#edition").text("Edição de " + dateStr);
+
+  function esc(s){ return $("<div>").text(s == null ? "" : String(s)).html(); }
+  function escAttr(s){ return esc(s).replace(/"/g,"&quot;"); }
+  function hostname(u){ try { return new URL(u).hostname.replace(/^www\./,""); } catch(e){ return null; } }
+  function companies(){ return PORTFOLIOS[state.portfolio] || []; }
+  function selectedList(){ return companies().filter(function(c){ return state.selected[c]; }); }
+
+  /* ---------- Render ---------- */
+  function renderDesks(){
+    var html = Object.keys(PORTFOLIOS).map(function(p){
+      var active = p === state.portfolio ? " active" : "";
+      return '<button class="desk'+active+'" data-p="'+escAttr(p)+'">'
+           + '<span class="desk-name">'+esc(p)+'</span>'
+           + '<span class="desk-count">'+PORTFOLIOS[p].length+' clientes</span></button>';
+    }).join("");
+    $("#desks").html(html);
+  }
+  function renderChips(){
+    var html = companies().map(function(c){
+      var on = state.selected[c] ? " on" : "";
+      return '<button class="chip'+on+'" data-c="'+escAttr(c)+'">'
+           + '<span class="chip-box">'+(state.selected[c] ? "&#10003;" : "")+'</span>'+esc(c)+'</button>';
+    }).join("");
+    $("#chips").html(html);
+  }
+  function refreshControls(){
+    var n = selectedList().length;
+    var all = n === companies().length && n > 0;
+    $("#selectAll").text(all ? "Limpar seleção" : "Selecionar todas");
+    $("#searchBtn").prop("disabled", n === 0 || state.running)
+      .text(state.running ? "Buscando…" : "Buscar notícias" + (n ? " ("+n+")" : ""));
+    var anyDone = Object.keys(state.results).some(function(k){ return state.results[k].status === "done"; });
+    $("#exportBtn").toggle(anyDone && !state.running);
+    $("#resetBtn").toggle(state.phase === "done");
+  }
+
+  function cardHtml(company){
+    var r = state.results[company] || { status:"pending" };
+    var head = '<div class="card-head"><h2 class="company">'+esc(company)+'</h2>';
+
+    if (r.status === "pending" || r.status === "loading"){
+      head += '<span class="status status-loading"><span class="spin"></span> '+(r.status==="loading"?"Buscando":"Na fila")+'</span></div>';
+      return '<article class="card" data-c="'+escAttr(company)+'">'+head
+           + '<div class="skeleton" style="width:90%"></div><div class="skeleton" style="width:75%"></div><div class="skeleton" style="width:60%"></div></article>';
+    }
+    if (r.status === "error"){
+      head += '<span class="status status-error">! Erro</span></div>';
+      return '<article class="card" data-c="'+escAttr(company)+'">'+head
+           + '<p class="err-msg">'+esc(r.error)+'</p>'
+           + '<button class="btn-retry" data-retry="'+escAttr(company)+'">Tentar novamente</button></article>';
+    }
+
+    var d = r.data || {};
+    var temas = (d.temas || []).filter(function(t){ return t && t.itens && t.itens.length; });
+    var hasNews = d.temNoticias !== false && (temas.length > 0 || d.manchetePrincipal);
+
+    head += hasNews
+      ? '<span class="status status-ok">&#10003; '+temas.length+' '+(temas.length===1?"tema":"temas")+'</span></div>'
+      : '<span class="status status-none">Sem novidades</span></div>';
+
+    var body = "";
+    if (!hasNews){
+      body = '<p class="no-news">Nenhuma notícia relevante encontrada no período (últimos 30 dias).</p>';
+    } else {
+      if (d.manchetePrincipal){
+        body += '<div class="headline"><span class="headline-tag">Manchete</span>'
+              + '<p class="headline-text">'+esc(d.manchetePrincipal)+'</p></div>';
+      }
+      if (d.resumo){ body += '<p class="summary">'+esc(d.resumo)+'</p>'; }
+      body += '<div class="themes">';
+      THEME_ORDER.forEach(function(cat){
+        var tema = temas.find(function(t){ return t.categoria === cat; });
+        if (!tema) return;
+        var m = THEME_META[cat] || { label:cat, color:"#9aa3b0" };
+        body += '<div class="theme"><div class="theme-head" style="color:'+m.color+'">'
+              + '<span class="theme-dot" style="background:'+m.color+'"></span>'+esc(m.label)+'</div><ul class="bullets">';
+        tema.itens.forEach(function(it){
+          var meta = "";
+          if (it.fonte) meta += '<span class="src">'+esc(it.fonte)+'</span>';
+          if (it.data) meta += '<span class="src-date">'+esc(it.data)+'</span>';
+          if (it.url) meta += '<a class="src-link" href="'+escAttr(it.url)+'" target="_blank" rel="noopener">'+esc(hostname(it.url)||"fonte")+' ↗</a>';
+          body += '<li style="--b:'+m.color+'"><span class="bullet-text">'+esc(it.texto)+'</span>'
+                + '<span class="bullet-meta">'+meta+'</span></li>';
+        });
+        body += '</ul></div>';
+      });
+      body += '</div>';
+    }
+    return '<article class="card" data-c="'+escAttr(company)+'">'+head+body+'</article>';
+  }
+
+  function renderResults(){
+    if (!Object.keys(state.results).length){ $("#results").empty(); return; }
+    $("#results").html(selectedList().map(cardHtml).join(""));
+  }
+  function updateCard(company){
+    var $old = $('#results .card[data-c="'+company.replace(/"/g,'\\"')+'"]');
+    if ($old.length){ $old.replaceWith(cardHtml(company)); } else { renderResults(); }
+  }
+  function updateProgress(){
+    var entries = Object.keys(state.results);
+    if (!entries.length){ $("#progress").hide(); return; }
+    var done = entries.filter(function(k){ var s=state.results[k].status; return s==="done"||s==="error"; }).length;
+    $("#progress").css("display","flex");
+    $("#progressFill").css("width", (done/entries.length*100)+"%");
+    $("#progressText").text(done+" de "+entries.length+(done===entries.length?" concluídas":" processando…"));
+  }
+
+  /* ---------- Busca (uma por vez: o Ollama atende 1 slot) ---------- */
+  function fetchCompany(company){
+    return $.ajax({
+      url:"/news/", method:"POST", contentType:"application/json",
+      data: JSON.stringify({ company: company, date_str: dateStr }), dataType:"json", timeout:240000
+    });
+  }
+  /* Nome de carteira agora é editável: sanitiza para o nome do arquivo. */
+  function safeFileName(s){ return String(s == null ? "" : s).replace(/[^\w\-]+/g, "_"); }
+  function failMsg(xhr){
+    var msg = "Falha na requisição.";
+    if (xhr.responseJSON && xhr.responseJSON.detail) msg = xhr.responseJSON.detail;
+    if (xhr.statusText === "timeout") msg = "Tempo esgotado. Tente novamente.";
+    return msg;
+  }
+
+  function runSearch(){
+    var queue = selectedList();
+    if (!queue.length || state.running) return;
+    state.results = {}; queue.forEach(function(c){ state.results[c] = { status:"pending" }; });
+    state.phase = "running"; state.running = true;
+    $("#empty").hide();
+    renderResults(); updateProgress(); refreshControls();
+
+    var idx = 0, active = 0, concurrency = 1;
+    function pump(){
+      while (active < concurrency && idx < queue.length){
+        (function(company){
+          active++;
+          state.results[company] = { status:"loading" };
+          updateCard(company);
+          fetchCompany(company)
+            .done(function(data){ state.results[company] = { status:"done", data:data }; })
+            .fail(function(xhr){ state.results[company] = { status:"error", error:failMsg(xhr) }; })
+            .always(function(){
+              active--; updateCard(company); updateProgress();
+              if (idx >= queue.length && active === 0){
+                state.running = false; state.phase = "done"; refreshControls();
+              } else { pump(); }
+            });
+        })(queue[idx++]);
+      }
+    }
+    pump();
+  }
+
+  function retryCompany(company){
+    state.results[company] = { status:"loading" };
+    updateCard(company); updateProgress();
+    fetchCompany(company)
+      .done(function(data){ state.results[company] = { status:"done", data:data }; })
+      .fail(function(xhr){ state.results[company] = { status:"error", error:failMsg(xhr) }; })
+      .always(function(){ updateCard(company); updateProgress(); refreshControls(); });
+  }
+
+  /* ---------- Exportação Word ---------- */
+  function buildWordDoc(done){
+    var C = { border:"#e2e2e2", rule:"#1a1a1a", text:"#1a1a1a", muted:"#666666",
+              soft:"#888888", accent:"#2563c9", htint:"#eef4fc", company:"#111111" };
+    function cardCell(company){
+      var r = state.results[company]; var d = (r && r.data) || {};
+      var temas = (d.temas || []).filter(function(t){ return t && t.itens && t.itens.length; });
+      var hasNews = d.temNoticias !== false && (temas.length > 0 || d.manchetePrincipal);
+      var inner = '<p style="margin:0 0 9px 0;padding-bottom:6px;border-bottom:1px solid #ececec;font-family:Georgia,serif;font-size:14pt;color:'+C.company+'"><b>'+esc(d.empresa||company)+'</b></p>';
+      if (!hasNews){
+        inner += '<p style="margin:0;font-size:10pt;font-style:italic;color:'+C.soft+'">Nenhuma notícia relevante encontrada no período (últimos 30 dias).</p>';
+      } else {
+        if (d.manchetePrincipal){
+          inner += '<table cellspacing="0" cellpadding="0" width="100%" style="margin:0 0 9px 0"><tr>'
+                + '<td style="background:'+C.htint+';border-left:3px solid '+C.accent+';padding:8px 11px">'
+                + '<p style="margin:0 0 3px 0;font-size:7pt;color:'+C.accent+'"><b>MANCHETE</b></p>'
+                + '<p style="margin:0;font-family:Georgia,serif;font-size:12.5pt;color:'+C.text+'">'+esc(d.manchetePrincipal)+'</p></td></tr></table>';
+        }
+        if (d.resumo){ inner += '<p style="margin:0 0 11px 0;font-size:9.5pt;color:'+C.muted+'">'+esc(d.resumo)+'</p>'; }
+        THEME_ORDER.forEach(function(cat){
+          var tema = temas.find(function(t){ return t.categoria === cat; }); if (!tema) return;
+          var m = WORD_THEME[cat] || { label:cat, color:"#555" };
+          inner += '<p style="margin:0 0 5px 0;font-size:8.5pt;color:'+m.color+'"><b>'+esc(m.label.toUpperCase())+'</b></p>';
+          tema.itens.forEach(function(it){
+            var src = [it.fonte, it.data].filter(Boolean).map(esc).join(" &#183; ");
+            var link = it.url ? (src?" &#8212; ":"") + '<a href="'+escAttr(it.url)+'" style="color:'+C.accent+';text-decoration:none">'+esc(hostname(it.url)||"fonte")+'</a>' : "";
+            inner += '<p style="margin:0 0 8px 0;font-size:10pt;color:'+C.text+'">'
+                  + '<span style="color:'+m.color+'">&#9642;</span> '+esc(it.texto)
+                  + '<br><span style="font-size:8pt;color:'+C.soft+'">'+src+link+'</span></p>';
+          });
+        });
+      }
+      return '<td width="50%" valign="top" style="border:1px solid '+C.border+';padding:14px 16px">'+inner+'</td>';
+    }
+    var rows = "";
+    for (var i=0; i<done.length; i+=2){
+      var left = cardCell(done[i]);
+      var right = done[i+1] ? cardCell(done[i+1]) : '<td width="50%" style="border:0"></td>';
+      rows += "<tr>"+left+right+"</tr>";
+    }
+    var body =
+      '<table cellspacing="0" cellpadding="0" width="100%"><tr>'
+      + '<td align="center" style="border-top:2px solid '+C.rule+';border-bottom:1px solid #ccc;padding:16px 10px">'
+      + '<p style="margin:0 0 7px 0;font-size:7.5pt;color:'+C.muted+'"><b>INTELIG&Ecirc;NCIA DE CONTAS-CHAVE&nbsp;&nbsp;&#183;&nbsp;&nbsp;BRIEFING 48H &#8211; 7 DIAS</b></p>'
+      + '<p style="margin:0;font-family:Georgia,serif;font-size:27pt;color:'+C.company+'">KAM News Digest</p>'
+      + '<p style="margin:7px 0 0 0;font-size:9.5pt;font-style:italic;color:'+C.muted+'">Carteira <span style="color:'+C.text+'"><b>'+esc(state.portfolio)+'</b></span>&nbsp;&#183;&nbsp;'+esc(dateStr)+'</p>'
+      + '</td></tr></table>'
+      + '<p style="margin:0;font-size:8pt;line-height:8pt">&nbsp;</p>'
+      + '<table cellspacing="9" cellpadding="0" width="100%">'+rows+'</table>'
+      + '<p style="margin:16px 0 0 0;font-size:8pt;color:'+C.soft+'" align="center">Not&iacute;cias recuperadas via busca na web. Confirme datas e fontes nos links antes do uso externo. Gerado em '+esc(dateStr)+'.</p>';
+    return '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8">'
+      + '<title>KAM News Digest — '+esc(state.portfolio)+'</title>'
+      + '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->'
+      + '<style>@page WordSection1 { size:21cm 29.7cm; margin:1.3cm 1.1cm; } div.WordSection1 { page:WordSection1; }'
+      + ' body { font-family:\'Segoe UI\',Calibri,Arial,sans-serif; color:#1a1a1a; } table { border-collapse:separate; }</style></head>'
+      + '<body><div class="WordSection1">'+body+'</div></body></html>';
+  }
+
+  function exportWord(){
+    var done = selectedList().filter(function(c){ return state.results[c] && state.results[c].status === "done"; });
+    if (!done.length || state.exporting) return;
+    state.exporting = true;
+    $("#exportBtn").prop("disabled", true).html('<span class="spin"></span> Gerando Word…');
+    $("#exportMsg").hide();
+    try {
+      var html = buildWordDoc(done);
+      var blob = new Blob(["\ufeff", html], { type:"application/msword" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url; a.download = "KAM-News-Digest-"+safeFileName(state.portfolio)+"-"+new Date().toISOString().slice(0,10)+".doc";
+      document.body.appendChild(a); a.click();
+      setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 1500);
+    } catch(e){
+      $("#exportMsg").text("Não foi possível gerar o Word. Tente novamente.").show();
+    }
+    state.exporting = false;
+    $("#exportBtn").prop("disabled", false).text("Exportar Word");
+  }
+
+  /* ---------- Eventos ---------- */
+  $("#desks").on("click", ".desk", function(){
+    if (state.running) return;
+    /* attr, não data: .data() converteria uma carteira "2026" em Number. */
+    state.portfolio = $(this).attr("data-p");
+    state.selected = {}; state.results = {}; state.phase = "idle";
+    renderDesks(); renderChips(); renderResults(); updateProgress(); refreshControls();
+    $("#empty").show();
+  });
+  $("#chips").on("click", ".chip", function(){
+    if (state.running) return;
+    var c = $(this).attr("data-c");
+    state.selected[c] = !state.selected[c];
+    renderChips(); refreshControls();
+  });
+  $("#selectAll").on("click", function(){
+    if (state.running) return;
+    var all = selectedList().length === companies().length;
+    state.selected = {};
+    if (!all) companies().forEach(function(c){ state.selected[c] = true; });
+    renderChips(); refreshControls();
+  });
+  $("#searchBtn").on("click", runSearch);
+  $("#resetBtn").on("click", function(){
+    if (state.running) return;
+    state.results = {}; state.phase = "idle";
+    renderResults(); updateProgress(); refreshControls(); $("#empty").show();
+  });
+  $("#exportBtn").on("click", exportWord);
+  $("#results").on("click", "[data-retry]", function(){ retryCompany($(this).attr("data-retry")); });
+
+  /* ================= Autenticação ================= */
+  /* Header em todas as chamadas. Mandá-lo no /auth/token é inofensivo. */
+  $.ajaxSetup({
+    beforeSend: function(xhr){
+      var t = token();
+      if (t) xhr.setRequestHeader("Authorization", "Bearer " + t);
+    }
+  });
+
+  /* Sem isto, um token vencido vira tela quebrada silenciosa. */
+  $(document).ajaxError(function(evt, xhr){
+    if (xhr.status !== 401) return;
+    if (xhr.statusText === "timeout") return;   /* timeout do /news/ */
+    if (!token()) return;                        /* já deslogado */
+    showLogin("Sessão expirada. Entre de novo.");
+  });
+
+  function api(method, url, body){
+    var opts = { url:url, method:method, dataType:"json" };
+    if (body !== undefined){
+      opts.contentType = "application/json";
+      opts.data = JSON.stringify(body);
+    }
+    return $.ajax(opts);
+  }
+
+  function msg($el, text, isErr){
+    $el.toggleClass("err", !!isErr).text(text).show();
+    if (!isErr) setTimeout(function(){ $el.fadeOut(200); }, 3500);
+  }
+
+  function showLogin(text){
+    setToken(null);
+    me = null;
+    state.portfolio = null; state.selected = {}; state.results = {};
+    state.phase = "idle"; state.running = false;
+    cad = { carteiras:[], keys:[], users:[], roles:[], selId:null, editUserId:null, busy:false, dirty:false };
+    PORTFOLIOS = {};
+    $("#appView").hide();
+    $("#meSep, #meLabel, #logoutBtn, #foot").hide();
+    $("#loginView").show();
+    $("#loginSenha").val("");
+    if (text) msg($("#loginMsg"), text, true); else $("#loginMsg").hide();
+  }
+
+  function showApp(){
+    $("#loginView").hide();
+    $("#appView").show();
+    $("#meLabel").text(me.username + " · " + (me.role ? me.role.nome : ""));
+    $("#meSep, #meLabel, #logoutBtn, #foot").show();
+    $("#tabUsuarios").toggle(isAdmin());
+    selectTab("digest");
+    loadPortfolios();
+  }
+
+  function doLogin(){
+    var email = $.trim($("#loginEmail").val());
+    var senha = $("#loginSenha").val();
+    if (!email || !senha){ msg($("#loginMsg"), "Informe e-mail e senha.", true); return; }
+
+    $("#loginBtn").prop("disabled", true).html('<span class="spin"></span> Entrando…');
+    /* OAuth2PasswordRequestForm é form-encoded, não JSON. */
+    $.ajax({
+      url:"/auth/token", method:"POST", dataType:"json",
+      data: { username: email, password: senha }
+    })
+      .done(function(data){
+        setToken(data.access_token);
+        api("GET", "/users/me/")
+          .done(function(user){ me = user; $("#loginMsg").hide(); showApp(); })
+          .fail(function(xhr){ setToken(null); msg($("#loginMsg"), failMsg(xhr), true); });
+      })
+      .fail(function(xhr){ msg($("#loginMsg"), failMsg(xhr), true); })
+      .always(function(){ $("#loginBtn").prop("disabled", false).text("Entrar"); });
+  }
+
+  $("#loginBtn").on("click", doLogin);
+  $("#loginEmail, #loginSenha").on("keypress", function(e){ if (e.which === 13) doLogin(); });
+  $("#logoutBtn").on("click", function(){ showLogin(""); });
+
+  /* ================= Abas ================= */
+  function selectTab(tab){
+    activeTab = tab;
+    $("#tabs .tab").removeClass("active").filter('[data-tab="'+tab+'"]').addClass("active");
+    $("#tab-digest").toggle(tab === "digest");
+    $("#tab-cadastro").toggle(tab === "cadastro");
+    $("#tab-usuarios").toggle(tab === "usuarios");
+
+    if (tab === "cadastro") loadCad();
+    if (tab === "usuarios") loadUsers();
+    /* Recarga preguiçosa: nunca no meio de uma busca em andamento. */
+    if (tab === "digest" && cad.dirty && !state.running){
+      cad.dirty = false;
+      loadPortfolios();
+    }
+  }
+
+  $("#tabs").on("click", ".tab", function(){ selectTab($(this).attr("data-tab")); });
+
+  /* ================= Digest: carga das carteiras ================= */
+  function loadPortfolios(done){
+    return $.getJSON("/portfolios/")
+      .done(function(data){
+        /* Reatribui (não muta): chaves velhas não podem sobreviver. */
+        PORTFOLIOS = {};
+        (data.portfolios || []).forEach(function(p){ PORTFOLIOS[p.name] = p.companies; });
+
+        var names = Object.keys(PORTFOLIOS);
+        if (state.portfolio && names.indexOf(state.portfolio) === -1) state.portfolio = null;
+        if (!state.portfolio) state.portfolio = names[0] || null;
+
+        /* Poda clientes que não existem mais na carteira. */
+        var live = {};
+        (PORTFOLIOS[state.portfolio] || []).forEach(function(c){
+          if (state.selected[c]) live[c] = true;
+        });
+        state.selected = live;
+
+        renderDesks(); renderChips(); renderResults(); updateProgress(); refreshControls();
+        $("#empty p").text(names.length
+          ? "Selecione uma carteira e os clientes para gerar o digest."
+          : "Nenhuma carteira disponível.");
+        if (done) done();
+      })
+      .fail(function(xhr){
+        if (xhr.status !== 401) $("#empty p").text("Falha ao carregar carteiras.");
+      });
+  }
+
+  /* ================= Cadastro ================= */
+  function busy(start){
+    if (start){ if (cad.busy) return false; cad.busy = true; return true; }
+    cad.busy = false; return true;
+  }
+  function afterWrite(){ cad.dirty = true; loadCad(); }
+  function cadErr(xhr){ msg($("#cadMsg"), failMsg(xhr), true); }
+
+  function loadCad(){
+    $.when(
+      api("GET", "/carteiras/?limit=500"),
+      api("GET", "/key-accounts/?limit=500")
+    ).done(function(c, k){
+      cad.carteiras = c[0].carteiras || [];
+      cad.keys = k[0].key_accounts || [];
+      renderCad();
+      /* O admin vê o dono de cada linha — precisa da lista de usuários
+         mesmo sem abrir a aba Usuários. */
+      if (isAdmin() && !cad.users.length) loadUsers();
+    });
+  }
+
+  function rowHtml(item, extra, selected){
+    var off = item.status !== "ativo";
+    return '<div class="list-row'+(off?" inativo":"")+(selected?" active":"")+'" data-id="'+item.id+'">'
+         + '<span class="list-main"><span class="list-name">'+esc(item.nome)+'</span>'
+         + (extra ? '<span class="list-sub">'+extra+'</span>' : '')+'</span>'
+         + '<span class="badge '+(off?"badge-inativo":"badge-ativo")+'">'+(off?"inativo":"ativo")+'</span>'
+         + '<span class="row-actions">'
+         + '<button class="btn-mini" data-act="rename">Renomear</button>'
+         + '<button class="btn-mini" data-act="toggle">'+(off?"Ativar":"Inativar")+'</button>'
+         + '<button class="btn-mini btn-danger" data-act="delete">Excluir</button>'
+         + '</span></div>';
+  }
+
+  function ownerLabel(item){
+    if (!isAdmin()) return "";
+    var owner = cad.users.filter(function(u){ return u.id === item.owner_id; })[0];
+    return owner ? "dono: " + esc(owner.username) : "";
+  }
+
+  function renderCarteiraList(){
+    if (!cad.carteiras.length){
+      $("#carteiraList").html('<p class="list-empty">Nenhuma carteira cadastrada.</p>');
+      return;
+    }
+    $("#carteiraList").html(cad.carteiras.map(function(c){
+      return rowHtml(c, ownerLabel(c), c.id === cad.selId);
+    }).join(""));
+  }
+
+  function renderKeyList(){
+    if (!cad.keys.length){
+      $("#keyList").html('<p class="list-empty">Nenhuma key account cadastrada.</p>');
+      return;
+    }
+    $("#keyList").html(cad.keys.map(function(k){
+      return rowHtml(k, ownerLabel(k), false);
+    }).join(""));
+  }
+
+  function selectedCarteira(){
+    return cad.carteiras.filter(function(c){ return c.id === cad.selId; })[0] || null;
+  }
+
+  function renderVinculos(){
+    var carteira = selectedCarteira();
+    if (!carteira){ $("#vinculosPanel").hide(); return; }
+
+    var linked = {};
+    (carteira.key_accounts || []).forEach(function(k){ linked[k.id] = true; });
+    var ativas = cad.keys.filter(function(k){ return k.status === "ativo"; });
+
+    $("#vinculoNome").text(carteira.nome);
+    $("#vinculoHint").text(
+      ativas.length ? Object.keys(linked).length + " de " + ativas.length + " vinculados"
+                    : "Cadastre uma key account primeiro"
+    );
+    $("#vinculoChips").html(ativas.map(function(k){
+      var on = linked[k.id] ? " on" : "";
+      return '<button class="chip'+on+'" data-ka="'+k.id+'">'
+           + '<span class="chip-box">'+(linked[k.id] ? "&#10003;" : "")+'</span>'+esc(k.nome)+'</button>';
+    }).join(""));
+    $("#vinculosPanel").show();
+  }
+
+  function renderCad(){ renderCarteiraList(); renderKeyList(); renderVinculos(); }
+
+  function addItem(url, $input){
+    var nome = $.trim($input.val());
+    if (!nome || !busy(true)) return;
+    api("POST", url, { nome: nome })
+      .done(function(){ $input.val(""); afterWrite(); })
+      .fail(cadErr)
+      .always(function(){ busy(false); });
+  }
+
+  $("#carteiraAdd").on("click", function(){ addItem("/carteiras/", $("#carteiraNome")); });
+  $("#keyAdd").on("click", function(){ addItem("/key-accounts/", $("#keyNome")); });
+  $("#carteiraNome").on("keypress", function(e){ if (e.which === 13) $("#carteiraAdd").click(); });
+  $("#keyNome").on("keypress", function(e){ if (e.which === 13) $("#keyAdd").click(); });
+
+  function rowAction(baseUrl, list, e, onDelete){
+    e.stopPropagation();
+    var $btn = $(e.currentTarget);
+    var id = parseInt($btn.closest(".list-row").attr("data-id"), 10);
+    var act = $btn.attr("data-act");
+    var item = list.filter(function(x){ return x.id === id; })[0];
+    if (!item) return;
+
+    if (act === "rename"){
+      var novo = window.prompt("Novo nome:", item.nome);
+      if (novo === null) return;
+      novo = $.trim(novo);
+      if (!novo || novo === item.nome) return;
+      if (!busy(true)) return;
+      api("PUT", baseUrl + id + "/", { nome: novo, status: item.status })
+        .done(afterWrite).fail(cadErr).always(function(){ busy(false); });
+    } else if (act === "toggle"){
+      if (!busy(true)) return;
+      var novoStatus = item.status === "ativo" ? "inativo" : "ativo";
+      api("PUT", baseUrl + id + "/", { nome: item.nome, status: novoStatus })
+        .done(afterWrite).fail(cadErr).always(function(){ busy(false); });
+    } else if (act === "delete"){
+      if (!window.confirm('Excluir "'+item.nome+'" definitivamente? Os vínculos serão removidos.')) return;
+      if (!busy(true)) return;
+      api("DELETE", baseUrl + id + "/")
+        .done(function(){ if (onDelete) onDelete(id); afterWrite(); })
+        .fail(cadErr).always(function(){ busy(false); });
+    }
+  }
+
+  $("#carteiraList").on("click", ".list-row [data-act]", function(e){
+    rowAction("/carteiras/", cad.carteiras, e, function(id){
+      if (cad.selId === id) cad.selId = null;
+    });
+  });
+  $("#keyList").on("click", ".list-row [data-act]", function(e){
+    rowAction("/key-accounts/", cad.keys, e);
+  });
+  $("#carteiraList").on("click", ".list-row", function(){
+    var id = parseInt($(this).attr("data-id"), 10);
+    cad.selId = (cad.selId === id) ? null : id;
+    renderCad();
+  });
+
+  $("#vinculoChips").on("click", ".chip", function(){
+    if (!cad.selId || !busy(true)) return;
+    var $chip = $(this);
+    var kaId = parseInt($chip.attr("data-ka"), 10);
+    var linked = $chip.hasClass("on");
+    var url = "/carteiras/" + cad.selId + "/key-accounts/" + kaId + "/";
+
+    api(linked ? "DELETE" : "POST", url)
+      .done(function(carteira){
+        /* A resposta já é a CarteiraPublic atualizada. */
+        cad.carteiras = cad.carteiras.map(function(c){
+          return c.id === carteira.id ? carteira : c;
+        });
+        cad.dirty = true;
+        renderVinculos();
+      })
+      .fail(cadErr)
+      .always(function(){ busy(false); });
+  });
+
+  /* ================= Usuários (admin) ================= */
+  function userErr(xhr){ msg($("#userMsg"), failMsg(xhr), true); }
+
+  function loadUsers(){
+    if (!isAdmin()) return;
+    $.when(api("GET", "/users/?limit=500"), api("GET", "/roles/"))
+      .done(function(u, r){
+        cad.users = u[0].users || [];
+        cad.roles = r[0].roles || [];
+        renderRoleOptions();
+        renderUserList();
+        /* A lista de donos das carteiras depende de cad.users. */
+        if (cad.carteiras.length) renderCad();
+      });
+  }
+
+  function renderRoleOptions(){
+    var atual = $("#userRole").val();
+    $("#userRole").html(cad.roles.map(function(r){
+      return '<option value="'+r.id+'">'+esc(r.nome)+'</option>';
+    }).join(""));
+    if (atual){ $("#userRole").val(atual); return; }
+    /* Default é KAM, não o primeiro alfabético (Administrador): criar
+       um admin sem querer é muito mais caro que o contrário. */
+    var kam = cad.roles.filter(function(r){ return r.nome !== ROLE_ADMIN; })[0];
+    if (kam) $("#userRole").val(kam.id);
+  }
+
+  function renderUserList(){
+    $("#userList").html(cad.users.map(function(u){
+      var off = u.status !== "ativo";
+      return '<div class="list-row'+(off?" inativo":"")+(u.id===cad.editUserId?" active":"")+'" data-id="'+u.id+'">'
+           + '<span class="list-main"><span class="list-name">'+esc(u.username)+'</span>'
+           + '<span class="list-sub">'+esc(u.email)+'</span></span>'
+           + '<span class="badge badge-role">'+esc(u.role ? u.role.nome : "")+'</span>'
+           + '<span class="badge '+(off?"badge-inativo":"badge-ativo")+'">'+(off?"inativo":"ativo")+'</span>'
+           + '<span class="row-actions">'
+           + '<button class="btn-mini" data-act="edit">Editar</button>'
+           + '<button class="btn-mini" data-act="toggle">'+(off?"Ativar":"Inativar")+'</button>'
+           + '<button class="btn-mini btn-danger" data-act="delete">Excluir</button>'
+           + '</span></div>';
+    }).join(""));
+  }
+
+  function resetUserForm(){
+    cad.editUserId = null;
+    $("#userNome, #userEmail, #userSenha").val("");
+    $("#userFormLabel").text("Novo usuário");
+    $("#userSave").text("Adicionar");
+    $("#userCancel").hide();
+    $("#userSenha").attr("placeholder", "Senha");
+    renderUserList();
+  }
+
+  $("#userCancel").on("click", resetUserForm);
+
+  $("#userSave").on("click", function(){
+    var payload = {
+      username: $.trim($("#userNome").val()),
+      email: $.trim($("#userEmail").val()),
+      role_id: parseInt($("#userRole").val(), 10),
+      status: "ativo"
+    };
+    var senha = $("#userSenha").val();
+
+    if (!payload.username || !payload.email || !payload.role_id){
+      msg($("#userMsg"), "Preencha usuário, e-mail e papel.", true); return;
+    }
+    if (!busy(true)) return;
+
+    var req;
+    if (cad.editUserId){
+      var atual = cad.users.filter(function(u){ return u.id === cad.editUserId; })[0];
+      payload.status = atual ? atual.status : "ativo";
+      if (senha) payload.password = senha;   /* vazio = não alterar */
+      req = api("PUT", "/users/" + cad.editUserId + "/", payload);
+    } else {
+      if (!senha){ busy(false); msg($("#userMsg"), "Informe a senha.", true); return; }
+      payload.password = senha;
+      req = api("POST", "/users/", payload);
+    }
+
+    req.done(function(){ resetUserForm(); loadUsers(); })
+       .fail(userErr)
+       .always(function(){ busy(false); });
+  });
+
+  $("#userList").on("click", ".list-row [data-act]", function(e){
+    e.stopPropagation();
+    var id = parseInt($(this).closest(".list-row").attr("data-id"), 10);
+    var act = $(this).attr("data-act");
+    var user = cad.users.filter(function(u){ return u.id === id; })[0];
+    if (!user) return;
+
+    if (act === "edit"){
+      cad.editUserId = id;
+      $("#userNome").val(user.username);
+      $("#userEmail").val(user.email);
+      $("#userSenha").val("").attr("placeholder", "Senha (em branco = não alterar)");
+      $("#userRole").val(user.role_id);
+      $("#userFormLabel").text("Editando " + user.username);
+      $("#userSave").text("Salvar");
+      $("#userCancel").show();
+      renderUserList();
+    } else if (act === "toggle"){
+      if (!busy(true)) return;
+      api("PUT", "/users/" + id + "/", {
+        username: user.username, email: user.email, role_id: user.role_id,
+        status: user.status === "ativo" ? "inativo" : "ativo"
+      }).done(loadUsers).fail(userErr).always(function(){ busy(false); });
+    } else if (act === "delete"){
+      if (!window.confirm('Excluir o usuário "'+user.username+'" definitivamente?')) return;
+      if (!busy(true)) return;
+      api("DELETE", "/users/" + id + "/")
+        .done(function(){ if (cad.editUserId === id) resetUserForm(); loadUsers(); })
+        .fail(userErr).always(function(){ busy(false); });
+    }
+  });
+
+  /* ================= Init ================= */
+  if (token()){
+    api("GET", "/users/me/")
+      .done(function(user){ me = user; showApp(); })
+      .fail(function(){ showLogin(""); });
+  } else {
+    showLogin("");
+  }
+});
+</script>
+</body>
+</html>

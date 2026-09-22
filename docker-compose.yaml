@@ -1,0 +1,48 @@
+version: '3.7'
+
+services:
+  # Banco de dados. Sem "ports": o app fala pela rede do compose. Para
+  # psql direto, use "127.0.0.1:5432:5432" — nunca "5432:5432".
+  kamnews_database:
+    image: postgres:16
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: kamnews
+      POSTGRES_PASSWORD: kamnews
+      POSTGRES_DB: kamnews
+    restart: unless-stopped
+
+  # Servidor Ollama (modelo local). Os modelos ficam no volume.
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+
+  # Aplicacao FastAPI. O entrypoint espera o banco e o Ollama, roda as
+  # migrations, semeia os dados e so entao sobe a API.
+  kamnews_app:
+    build: .
+    depends_on:
+      - kamnews_database
+      - ollama
+    ports:
+      - "127.0.0.1:8000:8000"
+    # Valores literais: Compose v1 nao suporta ${VAR:-default}.
+    environment:
+      DATABASE_URL: postgresql+psycopg://kamnews:kamnews@kamnews_database:5432/kamnews
+      # Troque por `openssl rand -hex 32` antes de expor fora do localhost.
+      SECRET_KEY: troque-esta-chave-em-producao
+      SEED_EMAIL_DOMAIN: kamnews.com.br
+      MASTER_EMAIL: admin@kamnews.com.br
+      MASTER_PASSWORD: admin123
+      SEED_KAM_PASSWORD: kamnews123
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_MODEL: llama3.2
+      OLLAMA_TIMEOUT: "150"
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
+  pgdata:

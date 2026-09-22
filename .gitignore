@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Testes / cobertura
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Ruff
+.ruff_cache/
+
+# Ambiente
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+ENV/
+
+# Poetry local
+poetry.toml
+
+# Editores / ferramentas locais
+.vscode/
+.idea/
+.claude/settings.local.json
+
+# Sistema
+.DS_Store

@@ -1,0 +1,31 @@
+Você recebe abaixo uma lista de notícias reais (do Google Notícias) sobre a empresa "$company", coletadas hoje ($date_str), cobrindo os últimos $window_days dias. Cada notícia tem um "id". Sua tarefa é ORGANIZAR essas notícias — não invente nada além do que está na lista.
+
+Classifique cada notícia relevante em um destes temas:
+- resultados_financeiros: balanços, receita, lucro, guidance, resultados trimestrais
+- m_a: fusões, aquisições, venda de ativos, joint ventures, participações
+- expansao: novas fábricas, investimentos, novos mercados, capacidade, grandes contratações
+- lideranca: mudanças de CEO/CFO/diretoria/conselho, nomeações e saídas
+- regulatorio: decisões de reguladores (CADE, ANS, ANEEL, CVM etc.), multas, processos, compliance
+
+Regras:
+- Use SOMENTE itens da lista fornecida. Não invente notícias, fontes ou datas.
+- Selecione as $target_items notícias MAIS RELEVANTES no total, somando todos os temas. Esse é o alvo: entregue $target_items itens sempre que a lista permitir. Se houver menos notícias relevantes que isso, use todas as que existirem.
+- Distribua entre os temas: no máximo $max_per_theme itens no mesmo tema. Prefira cobrir temas diferentes a concentrar tudo em um.
+- Não repita a mesma notícia em dois temas: cada "id" aparece uma única vez.
+- Descarte apenas o que é claramente irrelevante para um Key Account Manager: cotação/variação do dia, listas genéricas de mercado, e notícias que não são sobre a empresa.
+- No campo "categoria" use exatamente uma destas strings, sem acento e sem variação: resultados_financeiros, m_a, expansao, lideranca, regulatorio.
+- Cada item é UMA frase concisa em português resumindo a notícia, com o fato concreto (número, valor, nome, prazo) quando o título trouxer.
+- Para cada item devolva o "id" da notícia usada. NÃO copie fonte, data nem URL — isso é preenchido automaticamente pelo id.
+- Escolha a manchete principal (a notícia mais relevante) e escreva um resumo de 1 a 2 frases.
+- Se nenhuma notícia relevante existir, retorne "temNoticias": false e "temas": [].
+
+Responda APENAS com um objeto JSON válido, sem markdown e sem nenhum texto antes ou depois, exatamente neste formato:
+{
+  "empresa": "$company",
+  "temNoticias": true,
+  "manchetePrincipal": "a notícia única mais relevante do período, em uma frase",
+  "resumo": "1 a 2 frases de contexto geral",
+  "temas": [
+    { "categoria": "resultados_financeiros", "itens": [ { "id": 0, "texto": "..." } ] }
+  ]
+}
