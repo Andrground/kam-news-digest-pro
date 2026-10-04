@@ -182,7 +182,7 @@ def seeded(session):
 
 @pytest.fixture
 def fake_news():
-    async def _fake(company, date_str):
+    async def _fake(company, date_str, periodo):
         return {
             'empresa': company,
             'temNoticias': True,

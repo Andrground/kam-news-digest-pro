@@ -1,3 +1,5 @@
+from datetime import date
+
 import pytest
 
 from kamnews.news_service import (
@@ -8,7 +10,7 @@ from kamnews.news_service import (
 )
 
 TARGET = 5
-WINDOW = 15
+PERIODO = (date(2026, 7, 25), date(2026, 8, 9))
 ITENS_APOS_FUSAO = 2
 UM_ITEM = 1
 
@@ -127,11 +129,11 @@ def test_build_user_prompt_pede_o_alvo_de_itens():
     assert f'no máximo {MAX_ITEMS_PER_THEME} itens' in prompt
 
 
-def test_build_user_prompt_informa_a_janela():
-    # A janela vai no prompt para o modelo não descrever o período
+def test_build_user_prompt_informa_o_periodo():
+    # O período vai no prompt para o modelo não descrever o intervalo
     # errado no resumo ('último mês' quando a busca foi de 15 dias).
-    prompt = build_user_prompt('Vale', '2026-08-09', ITEMS, TARGET, WINDOW)
-    assert f'últimos {WINDOW} dias' in prompt
+    prompt = build_user_prompt('Vale', '2026-08-09', ITEMS, TARGET, PERIODO)
+    assert 'período de 25/07/2026 a 09/08/2026' in prompt
 
 
 # --------------------------------------------------------------------- #
@@ -183,9 +185,7 @@ def test_normalize_summary_um_tema_so_nao_trava_abaixo_do_teto():
     # MAX_ITEMS_PER_THEME itens em vez de parar em 3.
     itens = [{'id': i, 'texto': f'Nota {i}'} for i in range(len(NEUTRAL))]
     parsed = {
-        'temas': [
-            {'categoria': 'resultados_financeiros', 'itens': itens}
-        ]
+        'temas': [{'categoria': 'resultados_financeiros', 'itens': itens}]
     }
     out = normalize_summary(parsed, 'Vale', NEUTRAL, TARGET)
     assert _total(out) == MAX_ITEMS_PER_THEME
@@ -216,9 +216,7 @@ def test_normalize_summary_limita_o_total_no_alvo():
 )
 def test_normalize_summary_aceita_variacao_de_categoria(bruta, esperada):
     parsed = {
-        'temas': [
-            {'categoria': bruta, 'itens': [{'id': 0, 'texto': 'Fato.'}]}
-        ]
+        'temas': [{'categoria': bruta, 'itens': [{'id': 0, 'texto': 'Fato.'}]}]
     }
     out = normalize_summary(parsed, 'Vale', NEUTRAL, TARGET)
     assert [t['categoria'] for t in out['temas']] == [esperada]
@@ -282,8 +280,9 @@ def test_backfill_classifica_por_palavra_chave():
         t['categoria']: [i['texto'] for i in t['itens']] for t in out['temas']
     }
     assert 'Vale nomeia novo diretor de operações' in achados['lideranca']
-    assert 'CADE aprova operação da Vale sem restrições' in (
-        achados['regulatorio']
+    assert (
+        'CADE aprova operação da Vale sem restrições'
+        in (achados['regulatorio'])
     )
     assert 'Vale investe R$ 2 bi em nova planta' in achados['expansao']
 

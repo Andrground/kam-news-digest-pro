@@ -1,5 +1,10 @@
+from datetime import date
+
+import pytest
+from pydantic import ValidationError
+
 from kamnews.news_service import build_rss_url, parse_rss
-from kamnews.settings import Settings
+from kamnews.settings import MAX_PERIODO_DIAS, Settings
 
 SAMPLE_RSS = """<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0"><channel>
@@ -100,3 +105,18 @@ def test_build_rss_url():
 def test_build_rss_url_respeita_a_janela():
     settings = Settings(NEWS_WINDOW_DAYS=7)
     assert 'when%3A7d' in build_rss_url('Vale', settings)
+
+
+def test_build_rss_url_com_periodo():
+    # after:/before: são exclusivos no Google: a margem de um dia
+    # mantém as duas pontas do período no resultado.
+    periodo = (date(2026, 9, 1), date(2026, 9, 15))
+    url = build_rss_url('Vale', Settings(), periodo)
+    assert 'after%3A2026-08-31' in url
+    assert 'before%3A2026-09-16' in url
+    assert 'when%3A' not in url
+
+
+def test_window_days_nao_passa_do_limite():
+    with pytest.raises(ValidationError):
+        Settings(NEWS_WINDOW_DAYS=MAX_PERIODO_DIAS + 1)

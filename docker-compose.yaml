@@ -1,5 +1,9 @@
 version: '3.7'
 
+# Os valores vêm do arquivo .env (não versionado) por substituição
+# ${VAR}. Compose v1 não suporta ${VAR:-default}, mas suporta ${VAR}.
+# Copie .env.example para .env e preencha antes de subir.
+
 services:
   # Banco de dados. Sem "ports": o app fala pela rede do compose. Para
   # psql direto, use "127.0.0.1:5432:5432" — nunca "5432:5432".
@@ -8,9 +12,9 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     environment:
-      POSTGRES_USER: kamnews
-      POSTGRES_PASSWORD: kamnews
-      POSTGRES_DB: kamnews
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     restart: unless-stopped
 
   # Servidor Ollama (modelo local). Os modelos ficam no volume.
@@ -29,17 +33,18 @@ services:
       - ollama
     ports:
       - "127.0.0.1:8000:8000"
-    # Valores literais: Compose v1 nao suporta ${VAR:-default}.
     environment:
-      DATABASE_URL: postgresql+psycopg://kamnews:kamnews@kamnews_database:5432/kamnews
-      # Troque por `openssl rand -hex 32` antes de expor fora do localhost.
-      SECRET_KEY: troque-esta-chave-em-producao
-      SEED_EMAIL_DOMAIN: kamnews.com.br
-      MASTER_EMAIL: admin@kamnews.com.br
-      MASTER_PASSWORD: admin123
-      SEED_KAM_PASSWORD: kamnews123
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@kamnews_database:5432/${POSTGRES_DB}
+      SECRET_KEY: ${SECRET_KEY}
+      SEED_EMAIL_DOMAIN: ${SEED_EMAIL_DOMAIN}
+      MASTER_EMAIL: ${MASTER_EMAIL}
+      MASTER_PASSWORD: ${MASTER_PASSWORD}
+      SEED_KAM_PASSWORD: ${SEED_KAM_PASSWORD}
+      # Vazio = aba Assistente desligada (503 com aviso).
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      # Nome de serviço interno do compose: não é segredo nem varia.
       OLLAMA_HOST: http://ollama:11434
-      OLLAMA_MODEL: llama3.2
+      OLLAMA_MODEL: ${OLLAMA_MODEL}
       OLLAMA_TIMEOUT: "150"
     restart: unless-stopped
 

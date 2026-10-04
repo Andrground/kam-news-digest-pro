@@ -9,7 +9,9 @@ As notícias vêm do **Google News RSS** (gratuito, sem chave) e o resumo é
 feito por um **modelo local via Ollama** — **custo zero, sem chave de API**.
 
 Carteiras, key accounts e usuários ficam em **PostgreSQL**, com autenticação
-JWT: cada KAM enxerga a própria carteira e o administrador enxerga tudo.
+JWT: cada KAM enxerga a própria carteira e o administrador enxerga tudo. Cada
+notícia é guardada com um botão de **boa / neutra / má**, formando o histórico
+que alimentará o dashboard de "temperatura" da carteira.
 
 ## Estrutura
 
@@ -31,6 +33,10 @@ kam-news-digest/
 │       ├── database.py      # engine + get_session
 │       ├── models.py        # SQLAlchemy: Role, User, Carteira, KeyAccount
 │       ├── security.py      # hash de senha, JWT, get_current_user/admin
+│       ├── noticias_service.py  # histórico de notícias + avaliação
+│       ├── chat_context.py   # contexto do assistente (só da carteira)
+│       ├── chat_tools.py     # RSS + leitura de página (guarda SSRF)
+│       ├── chat_service.py   # LangChain + Groq
 │       ├── schemas.py       # Schema / Public / List
 │       ├── seed.py          # dados iniciais (idempotente)
 │       ├── portfolios.py    # semente inicial das carteiras
@@ -40,7 +46,7 @@ kam-news-digest/
 │       │   └── company_news.txt   # template do prompt (string.Template)
 │       ├── routers/
 │       │   ├── auth.py       users.py       roles.py
-│       │   ├── carteiras.py  key_accounts.py
+│       │   ├── carteiras.py  key_accounts.py  noticias.py  chat.py
 │       │   └── portfolios.py news.py
 │       └── static/
 │           └── index.html   # interface (CSS + jQuery)
@@ -49,6 +55,8 @@ kam-news-digest/
     ├── test_app.py       test_auth.py      test_users.py
     ├── test_carteiras.py test_key_accounts.py test_vinculos.py
     ├── test_portfolios.py test_seed.py     test_migration.py
+    ├── test_noticias.py   # persistência, dedup e avaliação
+    ├── test_chat.py       test_chat_tools.py
     ├── test_news.py      # rota /news/ com o fetcher sobrescrito
     ├── test_rss.py       # parse_rss / build_rss_url, sem I/O
     └── test_summary.py   # prompt, normalize_summary e _backfill
@@ -82,11 +90,14 @@ KAM por carteira:
 
 | Usuário | E-mail | Senha | Papel |
 |---|---|---|---|
-| `master` | `admin@kamnews.com.br` | `admin123` | Administrador |
-| `Mayra`, `Adriana`, `Renata`, `Rogério` | `<nome>@kamnews.com.br` | `kamnews123` | KAM |
+| `master` | o seu `MASTER_EMAIL` | o seu `MASTER_PASSWORD` | Administrador |
+| `Mayra`, `Adriana`, `Renata`, `Rogério` | `<nome>@<SEED_EMAIL_DOMAIN>` | o seu `SEED_KAM_PASSWORD` | KAM |
 
-> **Troque as senhas no primeiro acesso** (aba **Usuários**, como admin) e
-> defina um `SECRET_KEY` próprio — veja *Segurança* abaixo.
+As senhas são as que **você** definiu no `.env` — não há senha padrão embutida.
+
+> **Troque-as no primeiro acesso** (aba **Usuários**, como admin). O seed é
+> idempotente e nunca reseta a senha de um usuário que já existe, então mudar
+> o `.env` depois **não** muda a senha de quem já foi criado.
 
 O admin vê todas as carteiras e a aba **Usuários**; cada KAM vê apenas as
 próprias carteiras e key accounts.
@@ -162,7 +173,12 @@ engole requisições sem ela.
 | GET/PUT/DELETE | `/key-accounts/{id}/` | token | Uma key account. |
 | GET | `/portfolios/` | token | Carteiras ativas do usuário, com os clientes ativos. |
 | GET | `/portfolios/{name}/` | token | Uma carteira. |
-| POST | `/news/` | token | Busca notícias. Body: `{ "company": "...", "date_str": "..." }`. |
+| POST | `/news/` | token | Busca notícias **e guarda no histórico**. Body: `{ "company", "date_str", "key_account_id", "data_inicio", "data_fim" }`. Período limitado aos últimos 60 dias (422 fora disso). |
+| GET | `/noticias/` | token | Histórico salvo. Filtros: `carteira_id`, `key_account_id`, `avaliacao`, `dias`. |
+| PUT | `/noticias/{id}/avaliacao/` | token | `{"valor": "like"\|"dislike"\|"neutro"\|null}`. `null` limpa a avaliação. |
+| GET/POST | `/chat/conversas/` | token | Lista / cria conversa (exige `carteira_id`). |
+| GET/DELETE | `/chat/conversas/{id}/` | token | Detalhe com mensagens / apaga. |
+| POST | `/chat/conversas/{id}/mensagens/` | token | Pergunta ao assistente. |
 
 O dono (`owner_id`) vem **sempre** do token, nunca do corpo. Um KAM que peça o
 id de outro recebe **404**, não 403 — assim não vaza a existência de ids
@@ -190,7 +206,7 @@ Nenhuma variável é obrigatória.
 | `NEWS_HL`             | `pt-BR`               | Idioma do Google News. |
 | `NEWS_GL`             | `BR`                  | País do Google News. |
 | `NEWS_CEID`           | `BR:pt-BR`            | País:idioma do Google News. |
-| `NEWS_WINDOW_DAYS`    | `30`                  | Janela de dias da busca. |
+| `NEWS_WINDOW_DAYS`    | `30`                  | Período padrão (dias) quando a busca não informa datas. Máx. 60. |
 | `NEWS_MAX_ITEMS`      | `30`                  | Candidatos do RSS (já deduplicados) enviados ao modelo. |
 | `NEWS_TARGET_ITEMS`   | `5`                   | Notícias no briefing final por empresa. |
 
@@ -210,11 +226,70 @@ verdade é o banco: editar o arquivo não muda nada em uma base já semeada.
 O seed é idempotente e roda a cada boot — mas **não** desfaz um `inativo` posto
 à mão, não desfaz um desvínculo e não reseta senha de usuário existente.
 
+## Histórico de notícias e avaliação
+
+Cada notícia do digest tem três botões no rodapé do item: **▲ boa**,
+**● neutra** e **▼ má**. Clicar grava; clicar de novo no que já está ativo
+limpa a avaliação.
+
+A aba **Assistente** é um chat por carteira: ver *Assistente* abaixo.
+
+A aba **Histórico** mostra tudo o que já foi buscado, em cards por empresa e
+com os mesmos botões — assim recarregar a página não obriga a refazer a busca
+(que leva ~2 min por empresa). Dá para filtrar por carteira, empresa, avaliação
+e período.
+
+As notícias ficam guardadas por key account. Rebuscar a mesma empresa **não
+duplica**: a linha é reaproveitada pela URL, o texto é atualizado (o modelo
+reescreve o resumo a cada execução) e **a avaliação é preservada**.
+
+> A busca em si sempre refaz o caminho completo (Google News RSS + Ollama) —
+> o banco guarda o histórico, não serve de cache.
+
+Só empresas cadastradas como key account podem ser buscadas: é nelas que o
+histórico se pendura. Uma empresa fora do cadastro devolve 404.
+
+"Não avaliada" e "neutra" são estados **diferentes** — o dashboard futuro
+precisa separar "olhei e achei sem impacto" de "ainda não olhei".
+
+## Assistente
+
+A aba **Assistente** é um chat preso a uma carteira. Ele recebe como contexto
+os clientes daquela carteira, as notícias já salvas (com as avaliações) e a
+temperatura por empresa — **e nada de outras carteiras**.
+
+Quando a pergunta pede algo que não está no banco, ele busca sozinho:
+notícias recentes no Google News (só de clientes da carteira) ou o conteúdo de
+uma página citada. As fontes consultadas aparecem embaixo de cada resposta.
+
+As conversas ficam salvas e voltam ao recarregar a página. As que ficam
+**mais de 7 dias sem uso são apagadas** (`CHAT_HISTORY_DAYS`).
+
+### Ligando o assistente
+
+Diferente do resto do projeto, o chat usa um modelo na nuvem (Groq): um chat
+precisa responder em segundos, e o Ollama local leva dezenas deles. É também a
+única parte que manda dados para fora da sua máquina.
+
+1. Pegue uma chave em <https://console.groq.com/> (aba *API Keys*).
+2. Ponha em `GROQ_API_KEY`, no `.env` ou no `docker-compose.yaml`.
+
+**Sem a chave a aba fica desligada**, respondendo 503 com um aviso — o resto da
+aplicação segue funcionando normalmente.
+
 ## Segurança
 
 - **Troque o `SECRET_KEY`** antes de expor a aplicação para fora do localhost:
   `openssl rand -hex 32`. Quem conhece o valor padrão consegue forjar tokens; a
   aplicação avisa nos logs enquanto o valor de desenvolvimento estiver em uso.
+- **Os segredos ficam no `.env`**, que não é versionado. O
+  `docker-compose.yaml` só referencia `${VAR}` — nenhum valor sensível entra
+  no git. Copie de `.env.example` e preencha antes de subir.
 - **Troque as senhas do seed** no primeiro acesso.
 - A porta do app está publicada só em `127.0.0.1` e a do banco não está
   publicada — mantenha assim, a menos que saiba o que está fazendo.
+- **O assistente manda o contexto da carteira para a Groq.** Se isso for
+  inaceitável para os dados dos seus clientes, deixe `GROQ_API_KEY` vazia e a
+  aba fica desligada.
+- A leitura de páginas do assistente só alcança endereços públicos: a rede
+  interna (banco, Ollama) e o metadata da nuvem ficam bloqueados.

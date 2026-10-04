@@ -2,6 +2,7 @@ import asyncio
 import json
 import re
 import unicodedata
+from datetime import date, timedelta
 from email.utils import parsedate_to_datetime
 from http import HTTPStatus
 from pathlib import Path
@@ -11,7 +12,7 @@ from xml.etree import ElementTree
 
 import httpx
 
-from kamnews.settings import Settings, get_settings
+from kamnews.settings import Settings, get_settings, hoje_br
 
 SYSTEM = (
     'Você é um analista sênior de inteligência de mercado que prepara '
@@ -21,6 +22,9 @@ SYSTEM = (
 )
 
 MAX_ATTEMPTS = 3
+# Período de busca: (data inicial, data final), ambas inclusivas.
+Periodo = tuple[date, date]
+UM_DIA = timedelta(days=1)
 HTTP_TIMEOUT = 20
 USER_AGENT = 'Mozilla/5.0 (KAM News Digest)'
 # Teto por tema. Fica abaixo de NEWS_TARGET_ITEMS de propósito: garante
@@ -72,56 +76,141 @@ FALLBACK_KEYWORDS = (
     (
         'lideranca',
         (
-            'ceo', 'cfo', 'coo', 'cio', 'presidente', 'presidencia',
-            'diretor', 'diretora', 'diretoria', 'conselho', 'executivo',
-            'executiva', 'nomeia', 'nomeado', 'assume', 'renuncia',
-            'sucessao', 'comando',
+            'ceo',
+            'cfo',
+            'coo',
+            'cio',
+            'presidente',
+            'presidencia',
+            'diretor',
+            'diretora',
+            'diretoria',
+            'conselho',
+            'executivo',
+            'executiva',
+            'nomeia',
+            'nomeado',
+            'assume',
+            'renuncia',
+            'sucessao',
+            'comando',
         ),
     ),
     (
         'm_a',
         (
-            'aquisicao', 'aquisicoes', 'adquire', 'adquiriu', 'compra',
-            'comprar', 'fusao', 'fusoes', 'vende', 'vender', 'venda',
-            'participacao', 'fatia', 'incorpora', 'joint', 'controle',
+            'aquisicao',
+            'aquisicoes',
+            'adquire',
+            'adquiriu',
+            'compra',
+            'comprar',
+            'fusao',
+            'fusoes',
+            'vende',
+            'vender',
+            'venda',
+            'participacao',
+            'fatia',
+            'incorpora',
+            'joint',
+            'controle',
             'desinvestimento',
         ),
     ),
     (
         'regulatorio',
         (
-            'cade', 'cvm', 'aneel', 'ans', 'anvisa', 'anatel', 'antaq',
-            'multa', 'multado', 'processo', 'justica', 'stf', 'stj',
-            'liminar', 'antidumping', 'tarifa', 'imposto', 'tributario',
-            'compliance', 'investigacao', 'condenada', 'acordo',
+            'cade',
+            'cvm',
+            'aneel',
+            'ans',
+            'anvisa',
+            'anatel',
+            'antaq',
+            'multa',
+            'multado',
+            'processo',
+            'justica',
+            'stf',
+            'stj',
+            'liminar',
+            'antidumping',
+            'tarifa',
+            'imposto',
+            'tributario',
+            'compliance',
+            'investigacao',
+            'condenada',
+            'acordo',
         ),
     ),
     (
         'expansao',
         (
-            'fabrica', 'planta', 'investimento', 'investimentos',
-            'investe', 'investir', 'expansao', 'expande', 'amplia',
-            'ampliar', 'capacidade', 'inaugura', 'inauguracao', 'obra',
-            'unidade', 'contratacoes', 'contratar', 'exportacao',
-            'parceria', 'lanca', 'projeto',
+            'fabrica',
+            'planta',
+            'investimento',
+            'investimentos',
+            'investe',
+            'investir',
+            'expansao',
+            'expande',
+            'amplia',
+            'ampliar',
+            'capacidade',
+            'inaugura',
+            'inauguracao',
+            'obra',
+            'unidade',
+            'contratacoes',
+            'contratar',
+            'exportacao',
+            'parceria',
+            'lanca',
+            'projeto',
         ),
     ),
     (
         'resultados_financeiros',
         (
-            'lucro', 'prejuizo', 'receita', 'balanco', 'resultado',
-            'resultados', 'trimestre', 'trimestral', 'ebitda',
-            'guidance', 'faturamento', 'dividendo', 'dividendos',
-            'endividamento', 'divida',
+            'lucro',
+            'prejuizo',
+            'receita',
+            'balanco',
+            'resultado',
+            'resultados',
+            'trimestre',
+            'trimestral',
+            'ebitda',
+            'guidance',
+            'faturamento',
+            'dividendo',
+            'dividendos',
+            'endividamento',
+            'divida',
         ),
     ),
 )
 
 # Ruído de mercado que nunca deve entrar no briefing pelo complemento.
 NOISE_KEYWORDS = frozenset({
-    'ibovespa', 'pregao', 'fechamento', 'cotacao', 'radar', 'sobem',
-    'caem', 'sobe', 'cai', 'dispara', 'derrete', 'recomendacao',
-    'analise', 'carteira', 'dicas', 'melhores',
+    'ibovespa',
+    'pregao',
+    'fechamento',
+    'cotacao',
+    'radar',
+    'sobem',
+    'caem',
+    'sobe',
+    'cai',
+    'dispara',
+    'derrete',
+    'recomendacao',
+    'analise',
+    'carteira',
+    'dicas',
+    'melhores',
 })
 
 
@@ -149,8 +238,23 @@ class NewsServiceError(Exception):
 # --------------------------------------------------------------------------- #
 # Google News RSS (busca gratuita)                                            #
 # --------------------------------------------------------------------------- #
-def build_rss_url(company: str, settings: Settings) -> str:
-    query = quote_plus(f'{company} when:{settings.NEWS_WINDOW_DAYS}d')
+def build_rss_url(
+    company: str, settings: Settings, periodo: Periodo | None = None
+) -> str:
+    """URL da busca. Sem período, cobre os últimos `NEWS_WINDOW_DAYS`.
+
+    Com período, usa `after:`/`before:`, que são exclusivos no Google:
+    a margem de um dia de cada lado mantém as duas pontas no resultado.
+    """
+    if periodo is None:
+        filtro = f'when:{settings.NEWS_WINDOW_DAYS}d'
+    else:
+        inicio, fim = periodo
+        filtro = (
+            f'after:{(inicio - UM_DIA).isoformat()} '
+            f'before:{(fim + UM_DIA).isoformat()}'
+        )
+    query = quote_plus(f'{company} {filtro}')
     return (
         'https://news.google.com/rss/search'
         f'?q={query}&hl={settings.NEWS_HL}'
@@ -208,8 +312,10 @@ def parse_rss(xml_text: str, max_items: int) -> list[dict]:
     return items
 
 
-async def fetch_rss_items(company: str, settings: Settings) -> list[dict]:
-    url = build_rss_url(company, settings)
+async def fetch_rss_items(
+    company: str, settings: Settings, periodo: Periodo | None = None
+) -> list[dict]:
+    url = build_rss_url(company, settings, periodo)
     last_err = None
     for attempt in range(MAX_ATTEMPTS):
         try:
@@ -238,7 +344,7 @@ def build_user_prompt(
     date_str: str,
     items: list[dict],
     target: int | None = None,
-    window_days: int | None = None,
+    periodo: Periodo | None = None,
 ) -> str:
     """Monta o prompt com itens enxutos (só id + título).
 
@@ -248,21 +354,23 @@ def build_user_prompt(
     contexto e multiplica o tempo de geração.
 
     `target` é a quantidade de notícias pedida no briefing final e
-    `window_days` a janela coberta pela busca; os padrões vêm de
-    `NEWS_TARGET_ITEMS` e `NEWS_WINDOW_DAYS`. A janela entra no prompt
-    para o modelo não descrever o período errado no resumo.
+    `periodo` o intervalo coberto pela busca; os padrões vêm de
+    `NEWS_TARGET_ITEMS` e dos últimos `NEWS_WINDOW_DAYS`. O período
+    entra no prompt para o modelo não descrever o intervalo errado.
     """
     settings = get_settings()
     alvo = target if target is not None else settings.NEWS_TARGET_ITEMS
-    janela = (
-        window_days if window_days is not None else settings.NEWS_WINDOW_DAYS
-    )
+    if periodo is None:
+        hoje = hoje_br()
+        periodo = (hoje - timedelta(days=settings.NEWS_WINDOW_DAYS), hoje)
+    inicio, fim = periodo
     base = _PROMPT.substitute(
         company=company,
         date_str=date_str,
         target_items=alvo,
         max_per_theme=MAX_ITEMS_PER_THEME,
-        window_days=janela,
+        data_inicio=inicio.strftime('%d/%m/%Y'),
+        data_fim=fim.strftime('%d/%m/%Y'),
     )
     slim = [
         {'id': idx, 'titulo': item['titulo'], 'fonte': item['fonte']}
@@ -481,10 +589,7 @@ def _backfill(temas: list[dict], items: list[dict], limit: int) -> list[dict]:
     if total >= limit:
         return temas
     usados = {
-        item['url']
-        for tema in temas
-        for item in tema['itens']
-        if item['url']
+        item['url'] for tema in temas for item in tema['itens'] if item['url']
     }
     por_categoria = {tema['categoria']: tema for tema in temas}
     for item in items:
@@ -552,14 +657,14 @@ def normalize_summary(
 
 
 async def _summarize(
-    company: str, date_str: str, items: list[dict], settings: Settings
+    company: str,
+    date_str: str,
+    items: list[dict],
+    settings: Settings,
+    periodo: Periodo | None,
 ) -> dict:
     prompt = build_user_prompt(
-        company,
-        date_str,
-        items,
-        settings.NEWS_TARGET_ITEMS,
-        settings.NEWS_WINDOW_DAYS,
+        company, date_str, items, settings.NEWS_TARGET_ITEMS, periodo
     )
     content = await _call_ollama(prompt, settings)
     parsed = extract_json(content)
@@ -582,9 +687,11 @@ def _empty(company: str) -> dict:
     }
 
 
-async def fetch_company_news(company: str, date_str: str) -> dict:
+async def fetch_company_news(
+    company: str, date_str: str, periodo: Periodo | None = None
+) -> dict:
     settings = get_settings()
-    items = await fetch_rss_items(company, settings)
+    items = await fetch_rss_items(company, settings, periodo)
     if not items:
         return _empty(company)
-    return await _summarize(company, date_str, items, settings)
+    return await _summarize(company, date_str, items, settings, periodo)

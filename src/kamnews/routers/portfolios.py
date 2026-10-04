@@ -17,14 +17,18 @@ T_Session = Annotated[Session, Depends(get_session)]
 
 
 def _to_public(carteira: Carteira) -> PortfolioPublic:
-    """Shape idêntica à do dicionário hardcoded — o digest depende dela."""
+    """`companies` mantém a shape do dicionário hardcoded — o digest e o
+    export Word dependem dela. `key_accounts` é aditivo e carrega o id,
+    que o frontend manda no POST /news/."""
+    ativas = [
+        key_account
+        for key_account in carteira.key_accounts
+        if key_account.status == STATUS_ATIVO
+    ]
     return PortfolioPublic(
         name=carteira.nome,
-        companies=[
-            key_account.nome
-            for key_account in carteira.key_accounts
-            if key_account.status == STATUS_ATIVO
-        ],
+        companies=[key_account.nome for key_account in ativas],
+        key_accounts=ativas,
     )
 
 

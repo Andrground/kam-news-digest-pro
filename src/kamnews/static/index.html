@@ -49,6 +49,12 @@ body{ margin:0; background:var(--ink); color:var(--text); font-family:'Archivo',
 .chip-box{ width:16px; height:16px; border-radius:4px; border:1.5px solid var(--faint); display:inline-flex; align-items:center; justify-content:center; color:var(--ink); flex:0 0 auto; font-size:11px; font-weight:700; }
 .chip.on .chip-box{ background:var(--accent); border-color:var(--accent); }
 
+.periodo{ display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center; }
+.periodo-datas{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+.periodo-datas label{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); }
+.periodo-datas .input{ flex:0 0 auto; min-width:0; padding:8px 11px; color-scheme:dark; }
+.periodo-erro{ margin:10px 0 0; font-size:12px; color:var(--red); }
+
 .actions{ display:flex; gap:12px; align-items:center; margin-top:22px; flex-wrap:wrap; }
 .btn-primary{ display:inline-flex; align-items:center; gap:9px; background:var(--accent); color:#08111f; border:none; border-radius:9px; padding:12px 22px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; transition:all .15s ease; }
 .btn-primary:hover{ filter:brightness(1.07); transform:translateY(-1px); }
@@ -94,6 +100,15 @@ body{ margin:0; background:var(--ink); color:var(--text); font-family:'Archivo',
 .src-date{ font-size:11px; color:var(--faint); }
 .src-link{ display:inline-flex; align-items:center; gap:3px; font-size:11px; color:var(--accent); text-decoration:none; }
 .src-link:hover{ text-decoration:underline; }
+
+/* ---------- Avaliação da notícia ---------- */
+.rate{ display:inline-flex; gap:4px; margin-left:auto; }
+.rate-btn{ display:inline-flex; align-items:center; justify-content:center; width:24px; height:22px; background:none; border:1px solid var(--border); border-radius:6px; color:var(--faint); font-family:inherit; font-size:11px; line-height:1; cursor:pointer; transition:all .14s ease; padding:0; }
+.rate-btn:hover{ color:var(--text); border-color:#3a414e; }
+.rate-btn:disabled{ opacity:.45; cursor:default; }
+.rate-btn.on[data-rate="like"]{ color:#5ee0a4; border-color:rgba(94,224,164,.55); background:rgba(94,224,164,.12); }
+.rate-btn.on[data-rate="dislike"]{ color:#f0a8a8; border-color:rgba(240,138,138,.55); background:rgba(240,138,138,.12); }
+.rate-btn.on[data-rate="neutro"]{ color:var(--text); border-color:#4b515e; background:rgba(139,145,157,.15); }
 
 .skeleton{ height:11px; border-radius:5px; background:linear-gradient(90deg,var(--panel-2) 25%,#22262f 50%,var(--panel-2) 75%); background-size:200% 100%; animation:shimmer 1.3s infinite; margin-bottom:9px; }
 @keyframes shimmer{ from{ background-position:200% 0; } to{ background-position:-200% 0; } }
@@ -149,6 +164,49 @@ body{ margin:0; background:var(--ink); color:var(--text); font-family:'Archivo',
 .cad-msg.err{ color:#f0a8a8; }
 .me-label{ font-size:12px; color:var(--muted); }
 
+/* ---------- Assistente ---------- */
+.chat-panel{ display:flex; flex-direction:column; }
+.chat-log{ display:flex; flex-direction:column; gap:12px; min-height:220px; max-height:52vh; overflow-y:auto; padding:4px 2px 14px; }
+.chat-vazio{ color:var(--faint); font-family:'Newsreader',serif; font-style:italic; font-size:14px; text-align:center; padding:40px 12px; margin:0; }
+.msg{ max-width:78%; border:1px solid var(--border); border-radius:12px; padding:11px 14px; font-size:13.5px; line-height:1.55; white-space:pre-wrap; word-wrap:break-word; }
+.msg-user{ align-self:flex-end; background:var(--accent-soft); border-color:rgba(91,157,242,.4); }
+/* O Markdown já traz os blocos: o pre-wrap de .msg viraria linha em
+   branco entre cada um. Mais largura porque aqui cabem tabelas. */
+.msg-bot{ align-self:flex-start; background:var(--panel-2); white-space:normal; max-width:92%; }
+.msg-fontes{ display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; padding-top:8px; border-top:1px solid var(--border); }
+.fonte-tag{ font-size:10.5px; color:var(--muted); background:rgba(139,145,157,.12); border-radius:99px; padding:3px 9px; }
+.chat-entrada{ margin:0; padding-top:14px; border-top:1px solid var(--border); }
+.chat-entrada .input{ min-width:220px; }
+
+/* Markdown da resposta do assistente */
+.md > *:first-child{ margin-top:0; }
+.md > *:last-child{ margin-bottom:0; }
+.md-p{ margin:0 0 9px; }
+.md-h{ font-family:'Newsreader',serif; font-weight:600; color:var(--text);
+  line-height:1.3; margin:15px 0 7px; }
+h4.md-h{ font-size:16px; }
+h5.md-h{ font-size:14.5px; }
+h6.md-h{ font-size:13.5px; color:var(--muted); letter-spacing:.04em;
+  text-transform:uppercase; }
+.md-lista{ margin:0 0 9px; padding-left:20px; }
+.md-lista li{ margin-bottom:4px; }
+.md-lista li::marker{ color:var(--faint); }
+.md-hr{ border:0; border-top:1px solid var(--border); margin:13px 0; }
+.md-code{ font-family:ui-monospace,'SFMono-Regular',Menlo,monospace;
+  font-size:12px; background:rgba(139,145,157,.14); border-radius:4px;
+  padding:1px 5px; }
+.md-link{ color:var(--accent); text-decoration:underline;
+  text-underline-offset:2px; }
+.md strong{ color:#fff; font-weight:600; }
+/* A tabela rola sozinha: sem isso uma coluna larga estoura a bolha. */
+.md-tabela-wrap{ overflow-x:auto; margin:0 0 10px; }
+.md-tabela{ border-collapse:collapse; width:100%; font-size:12.5px; }
+.md-tabela th, .md-tabela td{ border:1px solid var(--border);
+  padding:6px 9px; text-align:left; vertical-align:top; }
+.md-tabela th{ background:rgba(139,145,157,.1); font-weight:600;
+  white-space:nowrap; }
+.md-tabela tbody tr:nth-child(even){ background:rgba(139,145,157,.05); }
+
 @media (max-width:560px){ .results{ grid-template-columns:1fr; } .desks{ grid-template-columns:repeat(2,1fr); } .tabs{ overflow-x:auto; } .row-actions{ flex-wrap:wrap; } }
 </style>
 </head>
@@ -188,6 +246,8 @@ body{ margin:0; background:var(--ink); color:var(--text); font-family:'Archivo',
 
   <nav class="tabs" id="tabs">
     <button class="tab active" data-tab="digest">Digest</button>
+    <button class="tab" data-tab="assistente">Assistente</button>
+    <button class="tab" data-tab="historico">Histórico</button>
     <button class="tab" data-tab="cadastro">Cadastro</button>
     <button class="tab" data-tab="usuarios" id="tabUsuarios" style="display:none">Usuários</button>
   </nav>
@@ -203,6 +263,18 @@ body{ margin:0; background:var(--ink); color:var(--text); font-family:'Archivo',
       <button class="select-all" id="selectAll">Selecionar todas</button>
     </div>
     <div class="chips" id="chips"></div>
+
+    <div class="panel-label panel-label-row">
+      <span>Período <span class="hint">· até 60 dias atrás</span></span>
+    </div>
+    <div class="periodo">
+      <div class="chips" id="periodoAtalhos"></div>
+      <div class="periodo-datas">
+        <label>De <input type="date" class="input" id="dataInicio"></label>
+        <label>Até <input type="date" class="input" id="dataFim"></label>
+      </div>
+    </div>
+    <p class="periodo-erro" id="periodoErro" style="display:none"></p>
 
     <div class="actions">
       <button class="btn-primary" id="searchBtn" disabled>Buscar notícias</button>
@@ -222,6 +294,61 @@ body{ margin:0; background:var(--ink); color:var(--text); font-family:'Archivo',
   <div class="empty" id="empty"><p>Carregando carteiras…</p></div>
 
   </div><!-- /tab-digest -->
+
+  <div class="tab-panel" id="tab-assistente" style="display:none">
+    <section class="panel">
+      <div class="panel-label panel-label-row">
+        <span>Assistente da carteira</span>
+        <span class="hint" id="chatHint"></span>
+      </div>
+      <div class="form-row">
+        <select class="select" id="chatCarteira"></select>
+        <select class="select" id="chatConversa"></select>
+        <button class="btn-ghost" id="chatNova">Nova conversa</button>
+        <button class="btn-mini btn-danger" id="chatExcluir" style="display:none">Excluir</button>
+      </div>
+    </section>
+
+    <section class="panel chat-panel">
+      <div class="chat-log" id="chatLog"></div>
+      <div class="form-row chat-entrada">
+        <input class="input" id="chatPergunta" type="text" maxlength="1000"
+               placeholder="Pergunte sobre as notícias desta carteira…">
+        <button class="btn-primary" id="chatEnviar">Enviar</button>
+      </div>
+      <p class="cad-msg" id="chatMsg" style="display:none"></p>
+    </section>
+  </div>
+
+  <div class="tab-panel" id="tab-historico" style="display:none">
+    <section class="panel">
+      <div class="panel-label panel-label-row">
+        <span>Histórico</span>
+        <span class="hint" id="histResumo"></span>
+      </div>
+      <div class="form-row">
+        <select class="select" id="histCarteira"></select>
+        <select class="select" id="histEmpresa"></select>
+        <select class="select" id="histAvaliacao">
+          <option value="">Todas as avaliações</option>
+          <option value="like">Boas</option>
+          <option value="neutro">Neutras</option>
+          <option value="dislike">Más</option>
+          <option value="sem">Não avaliadas</option>
+        </select>
+        <select class="select" id="histPeriodo">
+          <option value="">Todo o período</option>
+          <option value="7">Últimos 7 dias</option>
+          <option value="30">Últimos 30 dias</option>
+          <option value="90">Últimos 90 dias</option>
+        </select>
+        <button class="btn-ghost" id="histReload">Atualizar</button>
+      </div>
+    </section>
+
+    <section class="results" id="histResults"></section>
+    <div class="empty" id="histEmpty"><p>Carregando histórico…</p></div>
+  </div>
 
   <div class="tab-panel" id="tab-cadastro" style="display:none">
     <section class="panel">
@@ -284,6 +411,7 @@ $(function () {
   "use strict";
 
   var PORTFOLIOS = {};   // carregado de GET /portfolios/
+  var KA_IDS = {};       // carteira -> { empresa: key_account_id }
   var THEME_ORDER = ["resultados_financeiros","m_a","expansao","lideranca","regulatorio"];
   var THEME_META = {
     resultados_financeiros: { label:"Resultados financeiros", color:"var(--green)" },
@@ -300,13 +428,15 @@ $(function () {
     regulatorio: { label:"Regulatório", color:"#cc3d3d" }
   };
 
-  var state = { portfolio:null, selected:{}, results:{}, phase:"idle", running:false, exporting:false };
+  var state = { portfolio:null, selected:{}, results:{}, phase:"idle", running:false, exporting:false, periodo:null };
 
   var TOKEN_KEY = "kamnews_token";
   var ROLE_ADMIN = "Administrador";
   var me = null;
   var activeTab = "digest";
   var cad = { carteiras:[], keys:[], users:[], roles:[], selId:null, editUserId:null, busy:false, dirty:false };
+  var hist = { noticias:[], carregando:false };
+  var chat = { conversas:[], conversaId:null, mensagens:[], enviando:false };
 
   function token(){ try { return localStorage.getItem(TOKEN_KEY); } catch(e){ return null; } }
   function setToken(v){
@@ -322,6 +452,164 @@ $(function () {
   function hostname(u){ try { return new URL(u).hostname.replace(/^www\./,""); } catch(e){ return null; } }
   function companies(){ return PORTFOLIOS[state.portfolio] || []; }
   function selectedList(){ return companies().filter(function(c){ return state.selected[c]; }); }
+
+  /* ---------- Período da busca ----------
+     O limite (60 dias para trás) é regra do produto e o backend
+     recusa com 422 o que passar dele; aqui ele só evita a ida e volta.
+     Datas em ISO (AAAA-MM-DD) e "hoje" no fuso de Brasília, igual ao
+     servidor: com o fuso do navegador, um KAM fora do Brasil (ou a
+     virada do dia em UTC) pediria um dia que o backend não aceita. */
+  var MAX_PERIODO_DIAS = 60, PERIODO_PADRAO = 30, ATALHOS_PERIODO = [7, 15, 30, 60];
+
+  function hojeBR(){
+    var p = {};
+    new Intl.DateTimeFormat("en-US", { timeZone:"America/Sao_Paulo", year:"numeric", month:"2-digit", day:"2-digit" })
+      .formatToParts(new Date()).forEach(function(x){ p[x.type] = x.value; });
+    return p.year + "-" + p.month + "-" + p.day;
+  }
+  /* Meio-dia UTC: somar dias nunca cruza a meia-noite por causa de fuso. */
+  function addDias(iso, n){
+    var d = new Date(iso + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n);
+    return d.toISOString().slice(0, 10);
+  }
+  function diffDias(a, b){ return Math.round((Date.parse(b + "T12:00:00Z") - Date.parse(a + "T12:00:00Z")) / 864e5); }
+  function dataBR(iso){ var p = String(iso).split("-"); return p[2] + "/" + p[1] + "/" + p[0]; }
+  function periodoTexto(p){ return p ? "de " + dataBR(p.inicio) + " a " + dataBR(p.fim) : ""; }
+
+  function periodoAtual(){ return { inicio:$("#dataInicio").val(), fim:$("#dataFim").val() }; }
+  function periodoErro(){
+    var p = periodoAtual(), hoje = hojeBR();
+    if (!p.inicio || !p.fim) return "Informe as datas inicial e final.";
+    if (p.fim > hoje) return "A data final não pode ser no futuro.";
+    if (p.inicio < addDias(hoje, -MAX_PERIODO_DIAS)) return "O período é limitado aos últimos " + MAX_PERIODO_DIAS + " dias.";
+    if (p.inicio > p.fim) return "A data inicial não pode ser depois da final.";
+    return "";
+  }
+  function setPeriodoDias(n){
+    var hoje = hojeBR();
+    $("#dataFim").val(hoje);
+    $("#dataInicio").val(addDias(hoje, -n));
+    syncPeriodo();
+  }
+  function syncPeriodo(){
+    var hoje = hojeBR(), p = periodoAtual();
+    /* min/max guiam o calendário; digitar à mão ainda passa, por isso
+       a validação abaixo (e a do backend). */
+    $("#dataInicio").attr({ min:addDias(hoje, -MAX_PERIODO_DIAS), max:p.fim || hoje });
+    $("#dataFim").attr({ min:p.inicio || addDias(hoje, -MAX_PERIODO_DIAS), max:hoje });
+    /* O atalho só fica marcado enquanto as datas forem exatamente as dele. */
+    var ativo = p.fim === hoje && p.inicio ? diffDias(p.inicio, p.fim) : null;
+    $("#periodoAtalhos").html(ATALHOS_PERIODO.map(function(n){
+      var on = ativo === n;
+      return '<button class="chip'+(on ? " on" : "")+'" data-dias="'+n+'">'
+           + '<span class="chip-box">'+(on ? "&#10003;" : "")+'</span>'+n+' dias</button>';
+    }).join(""));
+    var erro = periodoErro();
+    $("#periodoErro").text(erro).toggle(!!erro);
+    refreshControls();
+  }
+
+  /* ---------- Markdown do assistente ----------
+     O modelo responde em Markdown (títulos, listas, tabelas, negrito) e
+     mostrar isso cru enche a bolha de ### e **.
+
+     Todo texto passa por esc() ANTES de virar HTML. A resposta pode
+     carregar trechos de páginas que a ferramenta LerPagina baixou, ou
+     seja, conteúdo de terceiros: injetá-lo direto seria XSS. Por isso o
+     parser monta as tags e o conteúdo entra sempre escapado — e é
+     também por isso que não usamos uma lib de Markdown de CDN, que
+     aceitaria HTML embutido por padrão. */
+  function mdInline(s){
+    return esc(s)
+      .replace(/`([^`]+)`/g, '<code class="md-code">$1</code>')
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>')
+      /* Só http(s): impede um href "javascript:" vindo do modelo. */
+      .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)"']+)\)/g,
+               '<a class="md-link" href="$2" target="_blank" '
+               + 'rel="noopener noreferrer">$1</a>');
+  }
+
+  function mdCelulas(linha){
+    return linha.trim().replace(/^\|/, "").replace(/\|$/, "").split("|")
+                .map(function(c){ return c.trim(); });
+  }
+
+  function mdTabela(chefe, corpo){
+    return '<div class="md-tabela-wrap"><table class="md-tabela"><thead><tr>'
+         + chefe.map(function(c){ return '<th>'+mdInline(c)+'</th>'; }).join("")
+         + '</tr></thead><tbody>'
+         + corpo.map(function(l){
+             return '<tr>' + l.map(function(c){
+               return '<td>'+mdInline(c)+'</td>';
+             }).join("") + '</tr>';
+           }).join("")
+         + '</tbody></table></div>';
+  }
+
+  var MD_TITULO = /^\s*(#{1,6})\s+(.+)$/;
+  var MD_OL = /^\s*\d+[.)]\s+/;
+  var MD_UL = /^\s*[-*•]\s+/;
+  function mdLinhaTabela(l){ return /^\s*\|.*\|\s*$/.test(l || ""); }
+  function mdSeparador(l){
+    return /^[\s|:-]+$/.test(l || "") && /-/.test(l || "") && /\|/.test(l || "");
+  }
+  function mdAbreBloco(l){
+    return MD_TITULO.test(l) || MD_OL.test(l) || MD_UL.test(l)
+        || mdLinhaTabela(l);
+  }
+
+  function mdToHtml(texto){
+    var linhas = String(texto == null ? "" : texto).split(/\r?\n/);
+    var out = [], i = 0;
+
+    while (i < linhas.length){
+      var l = linhas[i];
+      if (!l.trim()){ i++; continue; }
+
+      var t = MD_TITULO.exec(l);
+      if (t){
+        var tag = t[1].length <= 2 ? "h4" : (t[1].length === 3 ? "h5" : "h6");
+        out.push('<'+tag+' class="md-h">'+mdInline(t[2])+'</'+tag+'>');
+        i++; continue;
+      }
+
+      if (/^\s*([-*_])\s*\1\s*\1[\s\-*_]*$/.test(l)){
+        out.push('<hr class="md-hr">'); i++; continue;
+      }
+
+      /* Tabela: só quando a linha seguinte é o separador |---|---|. */
+      if (mdLinhaTabela(l) && mdSeparador(linhas[i+1])){
+        var chefe = mdCelulas(l);
+        i += 2;
+        var corpo = [];
+        while (i < linhas.length && mdLinhaTabela(linhas[i])){
+          corpo.push(mdCelulas(linhas[i])); i++;
+        }
+        out.push(mdTabela(chefe, corpo));
+        continue;
+      }
+
+      var ol = MD_OL.test(l);
+      if (ol || MD_UL.test(l)){
+        var re = ol ? MD_OL : MD_UL, itens = [];
+        while (i < linhas.length && re.test(linhas[i])){
+          itens.push('<li>'+mdInline(linhas[i].replace(re, ""))+'</li>');
+          i++;
+        }
+        out.push('<'+(ol?"ol":"ul")+' class="md-lista">'+itens.join("")
+               + '</'+(ol?"ol":"ul")+'>');
+        continue;
+      }
+
+      var p = [];
+      while (i < linhas.length && linhas[i].trim() && !mdAbreBloco(linhas[i])){
+        p.push(linhas[i].trim()); i++;
+      }
+      out.push('<p class="md-p">'+mdInline(p.join(" "))+'</p>');
+    }
+    return out.join("");
+  }
 
   /* ---------- Render ---------- */
   function renderDesks(){
@@ -345,11 +633,44 @@ $(function () {
     var n = selectedList().length;
     var all = n === companies().length && n > 0;
     $("#selectAll").text(all ? "Limpar seleção" : "Selecionar todas");
-    $("#searchBtn").prop("disabled", n === 0 || state.running)
+    $("#searchBtn").prop("disabled", n === 0 || state.running || !!periodoErro())
       .text(state.running ? "Buscando…" : "Buscar notícias" + (n ? " ("+n+")" : ""));
     var anyDone = Object.keys(state.results).some(function(k){ return state.results[k].status === "done"; });
     $("#exportBtn").toggle(anyDone && !state.running);
     $("#resetBtn").toggle(state.phase === "done");
+    $("#dataInicio, #dataFim").prop("disabled", state.running);
+  }
+
+  /* ---------- Avaliação (like / dislike / neutro) ---------- */
+  var RATES = [
+    { valor:"like",    icone:"&#9650;", titulo:"Boa notícia" },
+    { valor:"neutro",  icone:"&#9679;", titulo:"Notícia neutra" },
+    { valor:"dislike", icone:"&#9660;", titulo:"Má notícia" }
+  ];
+
+  function rateHtml(company, it){
+    /* Sem id, a notícia não foi persistida — não há o que avaliar. */
+    if (!it.id) return "";
+    var botoes = RATES.map(function(r){
+      var on = it.avaliacao === r.valor ? " on" : "";
+      return '<button class="rate-btn'+on+'" data-rate="'+r.valor+'"'
+           + ' data-noticia="'+it.id+'" data-company="'+escAttr(company)+'"'
+           + ' title="'+escAttr(r.titulo)+'">'+r.icone+'</button>';
+    }).join("");
+    return '<span class="rate">'+botoes+'</span>';
+  }
+
+  /* Acha o item pelo id da notícia dentro do resultado da empresa. */
+  function findItem(company, noticiaId){
+    var r = state.results[company];
+    var temas = (r && r.data && r.data.temas) || [];
+    for (var i = 0; i < temas.length; i++){
+      var itens = temas[i].itens || [];
+      for (var j = 0; j < itens.length; j++){
+        if (itens[j].id === noticiaId) return itens[j];
+      }
+    }
+    return null;
   }
 
   function cardHtml(company){
@@ -378,7 +699,7 @@ $(function () {
 
     var body = "";
     if (!hasNews){
-      body = '<p class="no-news">Nenhuma notícia relevante encontrada no período (últimos 30 dias).</p>';
+      body = '<p class="no-news">Nenhuma notícia relevante encontrada no período ('+esc(periodoTexto(state.periodo))+').</p>';
     } else {
       if (d.manchetePrincipal){
         body += '<div class="headline"><span class="headline-tag">Manchete</span>'
@@ -397,6 +718,7 @@ $(function () {
           if (it.fonte) meta += '<span class="src">'+esc(it.fonte)+'</span>';
           if (it.data) meta += '<span class="src-date">'+esc(it.data)+'</span>';
           if (it.url) meta += '<a class="src-link" href="'+escAttr(it.url)+'" target="_blank" rel="noopener">'+esc(hostname(it.url)||"fonte")+' ↗</a>';
+          meta += rateHtml(company, it);
           body += '<li style="--b:'+m.color+'"><span class="bullet-text">'+esc(it.texto)+'</span>'
                 + '<span class="bullet-meta">'+meta+'</span></li>';
         });
@@ -426,16 +748,25 @@ $(function () {
 
   /* ---------- Busca (uma por vez: o Ollama atende 1 slot) ---------- */
   function fetchCompany(company){
+    /* Manda o id junto: o nome sozinho é ambíguo para o admin, que
+       enxerga a carteira de todo mundo. */
+    var payload = { company: company, date_str: dateStr,
+                    data_inicio: state.periodo.inicio, data_fim: state.periodo.fim };
+    var kaId = (KA_IDS[state.portfolio] || {})[company];
+    if (kaId) payload.key_account_id = kaId;
     return $.ajax({
       url:"/news/", method:"POST", contentType:"application/json",
-      data: JSON.stringify({ company: company, date_str: dateStr }), dataType:"json", timeout:240000
+      data: JSON.stringify(payload), dataType:"json", timeout:240000
     });
   }
   /* Nome de carteira agora é editável: sanitiza para o nome do arquivo. */
   function safeFileName(s){ return String(s == null ? "" : s).replace(/[^\w\-]+/g, "_"); }
   function failMsg(xhr){
     var msg = "Falha na requisição.";
-    if (xhr.responseJSON && xhr.responseJSON.detail) msg = xhr.responseJSON.detail;
+    var detail = xhr.responseJSON && xhr.responseJSON.detail;
+    /* 422 do Pydantic vem como lista; o texto útil está em .msg. */
+    if ($.isArray(detail)) detail = detail.length && String(detail[0].msg || "").replace(/^Value error, /, "");
+    if (detail) msg = detail;
     if (xhr.statusText === "timeout") msg = "Tempo esgotado. Tente novamente.";
     return msg;
   }
@@ -443,6 +774,11 @@ $(function () {
   function runSearch(){
     var queue = selectedList();
     if (!queue.length || state.running) return;
+    /* "Hoje" pode ter virado com a página aberta: revalida antes. */
+    syncPeriodo();
+    if (periodoErro()) return;
+    /* Congelado: o "Tentar novamente" e o Word usam o mesmo período. */
+    state.periodo = periodoAtual();
     state.results = {}; queue.forEach(function(c){ state.results[c] = { status:"pending" }; });
     state.phase = "running"; state.running = true;
     $("#empty").hide();
@@ -489,7 +825,7 @@ $(function () {
       var hasNews = d.temNoticias !== false && (temas.length > 0 || d.manchetePrincipal);
       var inner = '<p style="margin:0 0 9px 0;padding-bottom:6px;border-bottom:1px solid #ececec;font-family:Georgia,serif;font-size:14pt;color:'+C.company+'"><b>'+esc(d.empresa||company)+'</b></p>';
       if (!hasNews){
-        inner += '<p style="margin:0;font-size:10pt;font-style:italic;color:'+C.soft+'">Nenhuma notícia relevante encontrada no período (últimos 30 dias).</p>';
+        inner += '<p style="margin:0;font-size:10pt;font-style:italic;color:'+C.soft+'">Nenhuma notícia relevante encontrada no período ('+esc(periodoTexto(state.periodo))+').</p>';
       } else {
         if (d.manchetePrincipal){
           inner += '<table cellspacing="0" cellpadding="0" width="100%" style="margin:0 0 9px 0"><tr>'
@@ -522,7 +858,7 @@ $(function () {
     var body =
       '<table cellspacing="0" cellpadding="0" width="100%"><tr>'
       + '<td align="center" style="border-top:2px solid '+C.rule+';border-bottom:1px solid #ccc;padding:16px 10px">'
-      + '<p style="margin:0 0 7px 0;font-size:7.5pt;color:'+C.muted+'"><b>INTELIG&Ecirc;NCIA DE CONTAS-CHAVE&nbsp;&nbsp;&#183;&nbsp;&nbsp;BRIEFING 48H &#8211; 7 DIAS</b></p>'
+      + '<p style="margin:0 0 7px 0;font-size:7.5pt;color:'+C.muted+'"><b>INTELIG&Ecirc;NCIA DE CONTAS-CHAVE&nbsp;&nbsp;&#183;&nbsp;&nbsp;PER&Iacute;ODO '+esc(dataBR(state.periodo.inicio))+' &#8211; '+esc(dataBR(state.periodo.fim))+'</b></p>'
       + '<p style="margin:0;font-family:Georgia,serif;font-size:27pt;color:'+C.company+'">KAM News Digest</p>'
       + '<p style="margin:7px 0 0 0;font-size:9.5pt;font-style:italic;color:'+C.muted+'">Carteira <span style="color:'+C.text+'"><b>'+esc(state.portfolio)+'</b></span>&nbsp;&#183;&nbsp;'+esc(dateStr)+'</p>'
       + '</td></tr></table>'
@@ -581,6 +917,12 @@ $(function () {
     renderChips(); refreshControls();
   });
   $("#searchBtn").on("click", runSearch);
+  $("#periodoAtalhos").on("click", ".chip", function(){
+    if (state.running) return;
+    setPeriodoDias(parseInt($(this).attr("data-dias"), 10));
+  });
+  $("#dataInicio, #dataFim").on("change", syncPeriodo);
+  setPeriodoDias(PERIODO_PADRAO);
   $("#resetBtn").on("click", function(){
     if (state.running) return;
     state.results = {}; state.phase = "idle";
@@ -588,6 +930,39 @@ $(function () {
   });
   $("#exportBtn").on("click", exportWord);
   $("#results").on("click", "[data-retry]", function(){ retryCompany($(this).attr("data-retry")); });
+
+  /* Usado pelo Digest e pelo Histórico: `item` é o objeto em memória
+     que guarda a avaliação para o re-render. */
+  function toggleRate($btn, item){
+    if ($btn.prop("disabled") || !item) return;
+
+    /* Clicar no botão já ativo desfaz a avaliação. */
+    var valor = $btn.hasClass("on") ? null : $btn.attr("data-rate");
+    var $grupo = $btn.closest(".rate").find(".rate-btn");
+    $grupo.prop("disabled", true);
+
+    api("PUT", "/noticias/" + item.id + "/avaliacao/", { valor: valor })
+      .done(function(noticia){
+        item.avaliacao = noticia.avaliacao;
+        $grupo.removeClass("on")
+              .filter('[data-rate="'+(noticia.avaliacao || "")+'"]')
+              .addClass("on");
+        if (activeTab === "historico") histResumo();
+      })
+      .always(function(){ $grupo.prop("disabled", false); });
+  }
+
+  $("#results").on("click", ".rate-btn", function(){
+    var $btn = $(this);
+    var noticiaId = parseInt($btn.attr("data-noticia"), 10);
+    toggleRate($btn, findItem($btn.attr("data-company"), noticiaId));
+  });
+
+  $("#histResults").on("click", ".rate-btn", function(){
+    var $btn = $(this);
+    var id = parseInt($btn.attr("data-noticia"), 10);
+    toggleRate($btn, hist.noticias.filter(function(n){ return n.id === id; })[0]);
+  });
 
   /* ================= Autenticação ================= */
   /* Header em todas as chamadas. Mandá-lo no /auth/token é inofensivo. */
@@ -626,6 +1001,10 @@ $(function () {
     state.portfolio = null; state.selected = {}; state.results = {};
     state.phase = "idle"; state.running = false;
     cad = { carteiras:[], keys:[], users:[], roles:[], selId:null, editUserId:null, busy:false, dirty:false };
+    hist = { noticias:[], carregando:false };
+    chat = { conversas:[], conversaId:null, mensagens:[], enviando:false };
+    $("#histResults").empty();
+    $("#chatLog").empty();
     PORTFOLIOS = {};
     $("#appView").hide();
     $("#meSep, #meLabel, #logoutBtn, #foot").hide();
@@ -674,9 +1053,13 @@ $(function () {
     activeTab = tab;
     $("#tabs .tab").removeClass("active").filter('[data-tab="'+tab+'"]').addClass("active");
     $("#tab-digest").toggle(tab === "digest");
+    $("#tab-assistente").toggle(tab === "assistente");
+    $("#tab-historico").toggle(tab === "historico");
     $("#tab-cadastro").toggle(tab === "cadastro");
     $("#tab-usuarios").toggle(tab === "usuarios");
 
+    if (tab === "assistente") abrirAssistente();
+    if (tab === "historico") abrirHistorico();
     if (tab === "cadastro") loadCad();
     if (tab === "usuarios") loadUsers();
     /* Recarga preguiçosa: nunca no meio de uma busca em andamento. */
@@ -693,8 +1076,13 @@ $(function () {
     return $.getJSON("/portfolios/")
       .done(function(data){
         /* Reatribui (não muta): chaves velhas não podem sobreviver. */
-        PORTFOLIOS = {};
-        (data.portfolios || []).forEach(function(p){ PORTFOLIOS[p.name] = p.companies; });
+        PORTFOLIOS = {}; KA_IDS = {};
+        (data.portfolios || []).forEach(function(p){
+          PORTFOLIOS[p.name] = p.companies;
+          var ids = {};
+          (p.key_accounts || []).forEach(function(k){ ids[k.nome] = k.id; });
+          KA_IDS[p.name] = ids;
+        });
 
         var names = Object.keys(PORTFOLIOS);
         if (state.portfolio && names.indexOf(state.portfolio) === -1) state.portfolio = null;
@@ -717,6 +1105,342 @@ $(function () {
         if (xhr.status !== 401) $("#empty p").text("Falha ao carregar carteiras.");
       });
   }
+
+  /* ================= Assistente ================= */
+  function chatMsg(texto, isErr){
+    if (!texto){ $("#chatMsg").hide(); return; }
+    msg($("#chatMsg"), texto, isErr);
+  }
+
+  function renderChatCarteiras(){
+    var atual = $("#chatCarteira").val();
+    $("#chatCarteira").html(cad.carteiras.map(function(c){
+      return '<option value="'+c.id+'">'+esc(c.nome)+'</option>';
+    }).join(""));
+    if (atual) $("#chatCarteira").val(atual);
+  }
+
+  function renderChatConversas(){
+    var daCarteira = chat.conversas.filter(function(c){
+      return c.carteira_id === parseInt($("#chatCarteira").val(), 10);
+    });
+    $("#chatConversa").html(
+      '<option value="">— nova conversa —</option>'
+      + daCarteira.map(function(c){
+          return '<option value="'+c.id+'">'+esc(c.titulo)+'</option>';
+        }).join("")
+    );
+    if (chat.conversaId) $("#chatConversa").val(chat.conversaId);
+    $("#chatExcluir").toggle(!!chat.conversaId);
+  }
+
+  function fonteLabel(f){
+    if (f.tipo === "noticias") return "buscou notícias: " + f.alvo;
+    if (f.tipo === "pagina")   return "leu: " + (hostname(f.alvo) || f.alvo);
+    return f.tipo;
+  }
+
+  function renderChatLog(){
+    if (!chat.mensagens.length){
+      $("#chatLog").html(
+        '<p class="chat-vazio">Pergunte sobre as notícias, a temperatura '
+        + 'ou os clientes desta carteira.</p>'
+      );
+      return;
+    }
+    $("#chatLog").html(chat.mensagens.map(function(m){
+      var classe = m.papel === "user" ? "msg-user" : "msg-bot";
+      var fontes = "";
+      if (m.fontes && m.fontes.length){
+        fontes = '<span class="msg-fontes">'
+               + m.fontes.map(function(f){
+                   return '<span class="fonte-tag">'+esc(fonteLabel(f))+'</span>';
+                 }).join("")
+               + '</span>';
+      }
+      /* Markdown só do assistente: a pergunta do KAM é texto puro, para
+         um "**" digitado por ele não virar negrito. */
+      var corpo = m.papel === "user"
+        ? esc(m.conteudo)
+        : '<div class="md">'+mdToHtml(m.conteudo)+'</div>';
+      return '<div class="msg '+classe+'">'+corpo+fontes+'</div>';
+    }).join(""));
+    var log = document.getElementById("chatLog");
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function loadConversa(id){
+    chat.conversaId = id || null;
+    if (!id){ chat.mensagens = []; renderChatLog(); renderChatConversas(); return; }
+
+    api("GET", "/chat/conversas/" + id + "/")
+      .done(function(data){
+        chat.mensagens = data.mensagens || [];
+        renderChatLog();
+        renderChatConversas();
+      })
+      .fail(function(xhr){ if (xhr.status !== 401) chatMsg(failMsg(xhr), true); });
+  }
+
+  function loadConversas(){
+    return api("GET", "/chat/conversas/")
+      .done(function(data){
+        chat.conversas = data.conversas || [];
+        renderChatConversas();
+      });
+  }
+
+  function abrirAssistente(){
+    var seguir = function(){
+      renderChatCarteiras();
+      if (!cad.carteiras.length){
+        $("#chatHint").text("Cadastre uma carteira para usar o assistente.");
+        $("#chatEnviar").prop("disabled", true);
+        return;
+      }
+      $("#chatHint").text("Só enxerga os dados da carteira selecionada.");
+      loadConversas().done(function(){ loadConversa(chat.conversaId); });
+    };
+
+    if (!cad.carteiras.length){
+      $.when(
+        api("GET", "/carteiras/?limit=500"),
+        api("GET", "/key-accounts/?limit=500")
+      ).done(function(c, k){
+        cad.carteiras = c[0].carteiras || [];
+        cad.keys = k[0].key_accounts || [];
+        seguir();
+      });
+    } else {
+      seguir();
+    }
+  }
+
+  function enviarPergunta(){
+    var pergunta = $.trim($("#chatPergunta").val());
+    if (!pergunta || chat.enviando) return;
+
+    var carteiraId = parseInt($("#chatCarteira").val(), 10);
+    if (!carteiraId){ chatMsg("Selecione uma carteira.", true); return; }
+
+    chat.enviando = true;
+    $("#chatEnviar").prop("disabled", true).html('<span class="spin"></span> Pensando…');
+    $("#chatPergunta").val("");
+    chatMsg("");
+
+    /* Mostra a pergunta na hora; a resposta chega depois. */
+    chat.mensagens.push({ papel:"user", conteudo:pergunta, fontes:[] });
+    renderChatLog();
+
+    var enviar = function(conversaId){
+      api("POST", "/chat/conversas/" + conversaId + "/mensagens/", { pergunta: pergunta })
+        .done(function(mensagem){
+          chat.mensagens.push(mensagem);
+          renderChatLog();
+          loadConversas();
+        })
+        .fail(function(xhr){
+          if (xhr.status !== 401){
+            chat.mensagens.pop();   /* devolve a pergunta ao input */
+            $("#chatPergunta").val(pergunta);
+            renderChatLog();
+            chatMsg(failMsg(xhr), true);
+          }
+        })
+        .always(function(){
+          chat.enviando = false;
+          $("#chatEnviar").prop("disabled", false).text("Enviar");
+        });
+    };
+
+    if (chat.conversaId){
+      enviar(chat.conversaId);
+    } else {
+      api("POST", "/chat/conversas/", { carteira_id: carteiraId })
+        .done(function(conversa){
+          chat.conversaId = conversa.id;
+          enviar(conversa.id);
+        })
+        .fail(function(xhr){
+          chat.enviando = false;
+          $("#chatEnviar").prop("disabled", false).text("Enviar");
+          if (xhr.status !== 401) chatMsg(failMsg(xhr), true);
+        });
+    }
+  }
+
+  $("#chatCarteira").on("change", function(){ loadConversa(null); });
+  $("#chatConversa").on("change", function(){
+    loadConversa(parseInt($(this).val(), 10) || null);
+  });
+  $("#chatNova").on("click", function(){ loadConversa(null); chatMsg(""); });
+  $("#chatEnviar").on("click", enviarPergunta);
+  $("#chatPergunta").on("keypress", function(e){ if (e.which === 13) enviarPergunta(); });
+
+  $("#chatExcluir").on("click", function(){
+    if (!chat.conversaId) return;
+    if (!window.confirm("Excluir esta conversa?")) return;
+
+    api("DELETE", "/chat/conversas/" + chat.conversaId + "/")
+      .done(function(){
+        chat.conversaId = null;
+        loadConversas().done(function(){ loadConversa(null); });
+      })
+      .fail(function(xhr){ if (xhr.status !== 401) chatMsg(failMsg(xhr), true); });
+  });
+
+  /* ================= Histórico ================= */
+  function histFiltros(){
+    var q = [];
+    var carteira = $("#histCarteira").val();
+    var empresa = $("#histEmpresa").val();
+    var avaliacao = $("#histAvaliacao").val();
+    var periodo = $("#histPeriodo").val();
+    if (carteira)  q.push("carteira_id=" + carteira);
+    if (empresa)   q.push("key_account_id=" + empresa);
+    if (avaliacao) q.push("avaliacao=" + avaliacao);
+    if (periodo)   q.push("dias=" + periodo);
+    return q.length ? "?" + q.join("&") : "";
+  }
+
+  /* As opções de empresa acompanham a carteira escolhida. */
+  function renderHistSelects(){
+    var carteiraId = parseInt($("#histCarteira").val(), 10);
+    var empresaAtual = $("#histEmpresa").val();
+
+    $("#histCarteira").html(
+      '<option value="">Todas as carteiras</option>'
+      + cad.carteiras.map(function(c){
+          return '<option value="'+c.id+'">'+esc(c.nome)+'</option>';
+        }).join("")
+    );
+    if (carteiraId) $("#histCarteira").val(carteiraId);
+
+    var carteira = cad.carteiras.filter(function(c){ return c.id === carteiraId; })[0];
+    var empresas = carteira ? (carteira.key_accounts || []) : cad.keys;
+
+    $("#histEmpresa").html(
+      '<option value="">Todas as empresas</option>'
+      + empresas.map(function(k){
+          return '<option value="'+k.id+'">'+esc(k.nome)+'</option>';
+        }).join("")
+    );
+    /* Se a empresa selecionada não pertence mais à carteira, limpa. */
+    if (empresaAtual && $('#histEmpresa option[value="'+empresaAtual+'"]').length){
+      $("#histEmpresa").val(empresaAtual);
+    }
+  }
+
+  function histResumo(){
+    var n = hist.noticias.length;
+    if (!n){ $("#histResumo").text(""); return; }
+    var c = { like:0, neutro:0, dislike:0, sem:0 };
+    hist.noticias.forEach(function(x){ c[x.avaliacao || "sem"]++; });
+    $("#histResumo").text(
+      n + (n === 1 ? " notícia" : " notícias")
+      + " · " + c.like + " boas · " + c.neutro + " neutras · "
+      + c.dislike + " más · " + c.sem + " sem avaliação"
+    );
+  }
+
+  function histCardHtml(empresa, itens){
+    /* Agrupa por tema, na mesma ordem e cores do Digest. */
+    var porTema = {};
+    itens.forEach(function(it){
+      (porTema[it.categoria] = porTema[it.categoria] || []).push(it);
+    });
+    var ordem = THEME_ORDER.filter(function(c){ return porTema[c]; })
+      .concat(Object.keys(porTema).filter(function(c){
+        return THEME_ORDER.indexOf(c) === -1;
+      }));
+
+    var body = '<div class="themes">';
+    ordem.forEach(function(cat){
+      var m = THEME_META[cat] || { label:cat, color:"#9aa3b0" };
+      body += '<div class="theme"><div class="theme-head" style="color:'+m.color+'">'
+            + '<span class="theme-dot" style="background:'+m.color+'"></span>'+esc(m.label)+'</div><ul class="bullets">';
+      porTema[cat].forEach(function(it){
+        var meta = "";
+        if (it.fonte) meta += '<span class="src">'+esc(it.fonte)+'</span>';
+        if (it.data)  meta += '<span class="src-date">'+esc(it.data)+'</span>';
+        if (it.url)   meta += '<a class="src-link" href="'+escAttr(it.url)+'" target="_blank" rel="noopener">'+esc(hostname(it.url)||"fonte")+' ↗</a>';
+        meta += rateHtml(empresa, it);
+        body += '<li style="--b:'+m.color+'"><span class="bullet-text">'+esc(it.texto)+'</span>'
+              + '<span class="bullet-meta">'+meta+'</span></li>';
+      });
+      body += '</ul></div>';
+    });
+    body += '</div>';
+
+    return '<article class="card">'
+         + '<div class="card-head"><h2 class="company">'+esc(empresa)+'</h2>'
+         + '<span class="status status-ok">'+itens.length+'</span></div>'
+         + body + '</article>';
+  }
+
+  function renderHist(){
+    if (!hist.noticias.length){
+      $("#histResults").empty();
+      $("#histEmpty p").text("Nenhuma notícia no histórico para esse filtro.");
+      $("#histEmpty").show();
+      histResumo();
+      return;
+    }
+    /* A API já ordena por empresa, então basta agrupar na sequência. */
+    var grupos = [], atual = null;
+    hist.noticias.forEach(function(n){
+      if (!atual || atual.empresa !== n.empresa){
+        atual = { empresa:n.empresa, itens:[] };
+        grupos.push(atual);
+      }
+      atual.itens.push(n);
+    });
+
+    $("#histEmpty").hide();
+    $("#histResults").html(grupos.map(function(g){
+      return histCardHtml(g.empresa, g.itens);
+    }).join(""));
+    histResumo();
+  }
+
+  function loadHist(){
+    if (hist.carregando) return;
+    hist.carregando = true;
+    $("#histEmpty p").text("Carregando histórico…");
+    $("#histEmpty").show();
+
+    api("GET", "/noticias/" + histFiltros())
+      .done(function(data){
+        hist.noticias = data.noticias || [];
+        renderHist();
+      })
+      .fail(function(xhr){
+        if (xhr.status !== 401) $("#histEmpty p").text(failMsg(xhr));
+      })
+      .always(function(){ hist.carregando = false; });
+  }
+
+  function abrirHistorico(){
+    /* Os selects dependem de carteiras/key accounts; carrega sob demanda. */
+    if (!cad.carteiras.length){
+      $.when(
+        api("GET", "/carteiras/?limit=500"),
+        api("GET", "/key-accounts/?limit=500")
+      ).done(function(c, k){
+        cad.carteiras = c[0].carteiras || [];
+        cad.keys = k[0].key_accounts || [];
+        renderHistSelects();
+        loadHist();
+      });
+    } else {
+      renderHistSelects();
+      loadHist();
+    }
+  }
+
+  $("#histCarteira").on("change", function(){ renderHistSelects(); loadHist(); });
+  $("#histEmpresa, #histAvaliacao, #histPeriodo").on("change", loadHist);
+  $("#histReload").on("click", loadHist);
 
   /* ================= Cadastro ================= */
   function busy(start){

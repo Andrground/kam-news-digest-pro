@@ -1,4 +1,4 @@
-Você recebe abaixo uma lista de notícias reais (do Google Notícias) sobre a empresa "$company", coletadas hoje ($date_str), cobrindo os últimos $window_days dias. Cada notícia tem um "id". Sua tarefa é ORGANIZAR essas notícias — não invente nada além do que está na lista.
+Você recebe abaixo uma lista de notícias reais (do Google Notícias) sobre a empresa "$company", coletadas hoje ($date_str), cobrindo o período de $data_inicio a $data_fim. Cada notícia tem um "id". Sua tarefa é ORGANIZAR essas notícias — não invente nada além do que está na lista.
 
 Classifique cada notícia relevante em um destes temas:
 - resultados_financeiros: balanços, receita, lucro, guidance, resultados trimestrais

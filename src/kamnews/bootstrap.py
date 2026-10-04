@@ -19,18 +19,36 @@ POLL_SECONDS = 2
 PROBE_TIMEOUT = 5
 
 
-def _warn_dev_secret(settings: Settings) -> None:
-    if settings.SECRET_KEY != DEV_SECRET_KEY:
-        return
-    print('=' * 70, flush=True)
-    print(
-        'ATENÇÃO: SECRET_KEY de desenvolvimento em uso. Qualquer um que '
-        'conheça\neste valor consegue forjar tokens. Antes de expor a '
-        'aplicação para fora\ndo localhost, gere uma nova com: '
-        'openssl rand -hex 32',
-        flush=True,
-    )
-    print('=' * 70, flush=True)
+def checar_secret_key(settings: Settings) -> bool:
+    """Vazia é fatal; a de desenvolvimento só avisa.
+
+    O compose resolve `${SECRET_KEY}` para string vazia quando o .env
+    não existe. Sem esta checagem, a aplicação subiria assinando tokens
+    com chave vazia — e ninguém perceberia.
+    """
+    if not settings.SECRET_KEY:
+        print('=' * 70, flush=True)
+        print(
+            'ERRO: SECRET_KEY vazia. Provavelmente falta o arquivo .env\n'
+            '(copie de .env.example) ou a variável não foi preenchida.\n'
+            'Gere uma com: openssl rand -hex 32',
+            flush=True,
+        )
+        print('=' * 70, flush=True)
+        return False
+
+    if settings.SECRET_KEY == DEV_SECRET_KEY:
+        print('=' * 70, flush=True)
+        print(
+            'ATENÇÃO: SECRET_KEY de desenvolvimento em uso. Qualquer um '
+            'que conheça\neste valor consegue forjar tokens. Antes de '
+            'expor a aplicação para fora\ndo localhost, gere uma nova '
+            'com: openssl rand -hex 32',
+            flush=True,
+        )
+        print('=' * 70, flush=True)
+
+    return True
 
 
 def _wait_for_db(url: str) -> bool:
@@ -99,7 +117,8 @@ def main() -> int:
     host = settings.OLLAMA_HOST.rstrip('/')
     model = settings.OLLAMA_MODEL
 
-    _warn_dev_secret(settings)
+    if not checar_secret_key(settings):
+        return 1
 
     # O banco primeiro: é rápido, e falhar aqui é melhor do que falhar
     # depois de um pull de modelo de vários minutos.

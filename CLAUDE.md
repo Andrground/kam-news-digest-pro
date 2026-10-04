@@ -18,11 +18,16 @@ financeiros, M&A, expansão, liderança, regulatório) para Key Account Managers
   sem chave) e usa um **modelo local via Ollama** apenas para **classificar
   por tema e resumir**. Sem chave de API, custo zero.
 - **Persistência:** PostgreSQL (SQLAlchemy 2.0 síncrono + Alembic) para
-  carteiras, key accounts e usuários.
+  carteiras, key accounts, usuários e o **histórico de notícias**, cada
+  uma com avaliação `like`/`dislike`/`neutro` (base do futuro dashboard
+  de "temperatura").
 - **Autenticação:** JWT. Carteiras e key accounts têm **dono**: o KAM vê só o
   que é dele, o admin vê tudo.
+- **Assistente:** chat por carteira (LangChain + Groq), com contexto do
+  banco e ferramentas de internet. Ver §16.
 - **Frontend:** `static/index.html` (HTML + jQuery), montado na raiz `/`.
-  Tela de login + três abas: Digest, Cadastro e Usuários (só admin).
+  Tela de login + cinco abas: Digest, Assistente, Histórico, Cadastro e
+  Usuários (a última só para admin).
 - **Idioma do produto:** português (mensagens, prompt e UI em pt-BR).
 
 ---
@@ -34,10 +39,12 @@ financeiros, M&A, expansão, liderança, regulatório) para Key Account Managers
 - **pydantic-settings** para configuração
 - **SQLAlchemy 2.0** (síncrono) + **Alembic** + **psycopg[binary]**
 - **pyjwt** + **pwdlib[argon2]** — token e hash de senha
+- **langchain-groq** + **beautifulsoup4** — assistente (§16)
 - **Ollama** (modelo local, ex.: `llama3.2`) — faz o resumo/classificação
 - **httpx** — fala com o Google News RSS e com a API do Ollama
 - **Poetry** (gerenciamento) + **taskipy** (tarefas)
 - **ruff** (lint + format) / **pytest** + **pytest-cov** + **testcontainers**
+  + **pytest-asyncio** (`asyncio_mode = 'auto'`: as ferramentas são async)
 
 ---
 
@@ -103,9 +110,14 @@ kam-news-digest/
 │       ├── app.py           # FastAPI + include_router + monta o frontend
 │       ├── settings.py      # pydantic-settings + get_settings() (lru_cache)
 │       ├── database.py      # engine + get_session
-│       ├── models.py        # Role, User, Carteira, KeyAccount + associação
+│       ├── models.py        # Role, User, Carteira, KeyAccount,
+│       │                    # Noticia, Conversa, Mensagem
+│       ├── chat_context.py  # contexto do assistente (preso à carteira)
+│       ├── chat_tools.py    # RSS + leitura de página (com guarda SSRF)
+│       ├── chat_service.py  # LangChain + Groq, rodada de ferramentas
 │       ├── security.py      # hash, JWT, get_current_user/admin, ensure_owner
 │       ├── schemas.py       # Pydantic: Schema / Public / List
+│       ├── noticias_service.py  # dedup por url_hash + avaliação
 │       ├── seed.py          # dados iniciais (idempotente)
 │       ├── portfolios.py    # semente inicial (NÃO é lido em runtime)
 │       ├── news_service.py  # Google News RSS + resumo via Ollama
@@ -115,7 +127,7 @@ kam-news-digest/
 │       ├── routers/
 │       │   ├── auth.py / users.py / roles.py
 │       │   ├── carteiras.py / key_accounts.py
-│       │   └── portfolios.py / news.py
+│       │   └── portfolios.py / news.py / noticias.py / chat.py
 │       └── static/
 │           └── index.html   # interface (CSS + jQuery embutidos)
 └── tests/
@@ -123,7 +135,8 @@ kam-news-digest/
     ├── conftest.py       # testcontainers + fixtures de papel/usuário/token
     ├── test_app.py / test_auth.py / test_users.py
     ├── test_carteiras.py / test_key_accounts.py / test_vinculos.py
-    ├── test_portfolios.py / test_seed.py
+    ├── test_portfolios.py / test_seed.py / test_noticias.py
+    ├── test_chat.py / test_chat_tools.py
     ├── test_migration.py # migration escrita à mão × models
     ├── test_news.py      # rota /news/ com o fetcher sobrescrito
     ├── test_rss.py       # parse_rss / build_rss_url, sem I/O
@@ -273,8 +286,8 @@ app.dependency_overrides[get_news_fetcher] = lambda: fake_news
 Para banco e autenticação o padrão é o mesmo, com aliases no topo do router:
 
 ```python
-T_Session = Annotated[Session, Depends(get_session)]   # database.py
-T_CurrentUser = Annotated[User, Depends(get_current_user)]   # security.py
+T_Session = Annotated[Session, Depends(get_session)]  # database.py
+T_CurrentUser = Annotated[User, Depends(get_current_user)]  # security.py
 T_CurrentAdmin = Annotated[User, Depends(get_current_admin)]
 ```
 
@@ -329,8 +342,14 @@ Cobertura sai em `htmlcov/` após `task test`.
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | `480`         |  não   |
 | `SEED_EMAIL_DOMAIN`   | `kamnews.com.br`      |  não   |
 | `MASTER_EMAIL`        | `admin@kamnews.com.br`|  não   |
-| `MASTER_PASSWORD`     | `admin123`            |  não   |
-| `SEED_KAM_PASSWORD`   | `kamnews123`          |  não   |
+| `MASTER_PASSWORD`     | `admin123` (só local) |  não   |
+| `SEED_KAM_PASSWORD`   | `kamnews123` (só local) | não |
+| `GROQ_API_KEY`        | `''` (desliga a aba)  |  não   |
+| `CHAT_MODEL`          | `openai/gpt-oss-120b` | não |
+| `CHAT_TIMEOUT`        | `60`                  |  não   |
+| `CHAT_MAX_NOTICIAS`   | `60`                  |  não   |
+| `CHAT_HISTORY_DAYS`   | `7`                   |  não   |
+| `CHAT_MAX_PAGINA_CHARS` | `6000`              |  não   |
 | `OLLAMA_HOST`         | `http://localhost:11434` | não |
 | `OLLAMA_MODEL`        | `llama3.2`            |  não   |
 | `OLLAMA_NUM_PREDICT`  | `700`                 |  não   |
@@ -346,6 +365,15 @@ Cobertura sai em `htmlcov/` após `task test`.
 **Nenhuma variável é obrigatória** — os padrões funcionam com um Postgres e um
 Ollama locais. O `.env` é opcional.
 
+**Os defaults valem só para `task run` local.** No Docker, o
+`docker-compose.yaml` passa `${VAR}` lidas do `.env` — que não é
+versionado. Compose v1 não tem `${VAR:-default}`, então **variável
+ausente vira string vazia**, não o default do `settings.py`. Por isso o
+`bootstrap.py` aborta com `SECRET_KEY` vazia: sem essa checagem a
+aplicação subiria assinando tokens com chave em branco.
+
+Nunca ponha valor sensível no `docker-compose.yaml` — ele é versionado.
+
 Duas armadilhas já pagas:
 - **`SECRET_KEY` tem default de desenvolvimento** para manter a regra acima.
   Quem conhece o valor forja tokens; o `bootstrap.py` avisa em destaque
@@ -359,11 +387,23 @@ Duas armadilhas já pagas:
 
 ## 11. Fonte de notícias e modelo (custo zero)
 
-> Esta seção descreve o pipeline de notícias, que **não** mudou com o banco.
+> Esta seção descreve o pipeline RSS + Ollama, que **não** mudou. A
+> persistência do resultado está na §15.
 
 - **Busca:** `fetch_rss_items` monta a URL do **Google News RSS**
   (`build_rss_url`) por empresa e baixa via `httpx`; `parse_rss` extrai
   título, fonte, data e URL (stdlib `xml.etree`).
+- **Período:** o `POST /news/` recebe `data_inicio`/`data_fim` (ISO).
+  `NewsRequest` valida: nada no futuro e início no máximo
+  `MAX_PERIODO_DIAS = 60` (constante em `settings.py`, não env — é regra
+  do produto) dias atrás. "Hoje" é `hoje_br()` (UTC-3 fixo; a imagem
+  slim não tem tzdata) — o frontend usa o mesmo fuso via `Intl`. Sem
+  datas, vale `NEWS_WINDOW_DAYS` até hoje. Com período, a URL usa
+  `after:`/`before:` com um dia de margem em cada ponta (são exclusivos
+  no Google); sem período (assistente), segue `when:Nd`. Na UI, os
+  atalhos 7/15/30/60 só preenchem os dois campos de data; o período é
+  congelado em `state.periodo` no `runSearch`, para o "Tentar
+  novamente" e o Word usarem o mesmo.
 - **Resumo:** `_call_ollama` envia os itens ao **Ollama** (`/api/chat`,
   `format: json`, `stream: false`), que classifica por tema e escreve os
   bullets. Roda 100% local — **sem chave e sem custo de API**.
@@ -455,7 +495,12 @@ Só `/`, `/health` e `/auth/token` são públicas; o resto exige
 | GET/PUT/DELETE | `/key-accounts/{id}/` | token | Idem. |
 | GET | `/portfolios/` | token | Carteiras `ativo` do usuário, clientes `ativo`. Ordem **alfabética**. |
 | GET | `/portfolios/{name}/` | token | Uma carteira (404). |
-| POST | `/news/` | token | Busca notícias. Body `{ "company": "...", "date_str": "..." }`. |
+| POST | `/news/` | token | Busca **e persiste**. Body `{ "company", "date_str", "key_account_id"?, "data_inicio"?, "data_fim"? }`. 404 se a empresa não for key account cadastrada; 422 se o período sair dos últimos 60 dias. |
+| GET | `/noticias/` | token | Histórico. Filtros: `carteira_id`, `key_account_id`, `avaliacao` (+`sem`), `dias`, `limit`, `skip`. |
+| PUT | `/noticias/{id}/avaliacao/` | token | `{"valor": "like"\|"dislike"\|"neutro"\|null}`. `null` limpa. |
+| GET/POST | `/chat/conversas/` | token | Lista (e purga) / cria. POST exige `carteira_id` no escopo. |
+| GET/DELETE | `/chat/conversas/{id}/` | token | Detalhe com mensagens / apaga. 404 fora do escopo. |
+| POST | `/chat/conversas/{id}/mensagens/` | token | Pergunta ao assistente. 503 sem `GROQ_API_KEY`. |
 
 > A shape de `/portfolios/` é idêntica à do dicionário antigo — o digest
 > depende dela. A ordem, porém, virou alfabética: a carteira default do admin
@@ -478,3 +523,167 @@ Docs automáticas: `/docs` (Swagger) e `/redoc`.
 - [ ] Mudou env? Atualizou **os dois** `.env` de exemplo
       (`diff .env.example env.example.txt` vazio) e a tabela da §10.
 - [ ] Sem segredos no código; `.env` fora do versionamento.
+
+---
+
+## 15. Histórico de notícias e avaliação
+
+Cada notícia devolvida pelo `POST /news/` vira uma linha em `noticia`,
+pendurada na **key account** (que já tem dono). É o que alimentará o
+dashboard de "temperatura" — boas, más, neutras e **não avaliadas**.
+
+**Toda busca refaz o RSS + Ollama.** O banco não é cache: serve para não
+duplicar linha e para a avaliação sobreviver entre buscas.
+
+- **Identidade:** `UNIQUE(key_account_id, url_hash)`, onde `url_hash` é o
+  sha256 da URL. A URL crua tem 200+ chars em base64 — indexá-la seria
+  caro. Sem URL, o hash cai para `categoria|texto`.
+- **Rebusca:** encontrou o `url_hash`, faz UPDATE de `texto`, `categoria`,
+  `fonte`, `data_publicacao` e `vista_em` — o modelo reescreve o bullet
+  entre execuções. **`avaliacao` nunca é tocada ali.**
+- **Quatro estados:** `like`, `dislike`, `neutro` e `NULL`. `NULL` **não**
+  é o mesmo que `neutro`: é "ainda não olhei", e o dashboard precisa
+  distinguir. Clicar no botão já ativo manda `{"valor": null}` e limpa.
+- **`data_publicacao` é `Date`**, não string: o RSS já entrega ISO
+  (`_format_date`), e a série temporal do dashboard depende disso.
+- **Escopo:** a notícia herda o dono da key account. `scope_noticias()`
+  filtra igual aos outros routers; id fora do escopo devolve 404.
+- **`ondelete='CASCADE'`** na FK para `key_account`: apagar a key account
+  leva o histórico junto.
+
+A empresa **precisa** estar cadastrada como key account — sem isso não há
+onde pendurar o histórico, e o `POST /news/` devolve 404. O frontend manda
+`key_account_id` (vindo do campo `key_accounts` de `/portfolios/`), porque
+o nome sozinho é ambíguo para o admin, que enxerga a carteira de todos.
+
+### Aba Histórico
+
+`GET /noticias/` existe porque uma busca custa ~2 min por empresa:
+recarregar a página não pode obrigar a refazê-la. A aba mostra o que está
+no banco em **cards por empresa**, no mesmo visual do Digest, com os
+mesmos botões de avaliação.
+
+- Os quatro filtros (`carteira_id`, `key_account_id`, `avaliacao`, `dias`)
+  vão num `NoticiaFiltro` como modelo de query — o handler não vira uma
+  lista de oito parâmetros, e o dashboard reaproveita os mesmos recortes.
+- `avaliacao=sem` filtra `IS NULL` (não avaliadas), distinto de `neutro`.
+- `dias` filtra por `data_publicacao`; **notícia sem data fica fora de
+  qualquer recorte de período**, porque não dá para afirmar que cai dentro.
+- A API já ordena por empresa, então o frontend agrupa em sequência, sem
+  reordenar.
+- O clique de avaliação é o mesmo `toggleRate()` nas duas abas; só muda de
+  onde vem o objeto em memória (`state.results` no Digest,
+  `hist.noticias` no Histórico).
+
+A consulta que o dashboard vai usar já sai direto do schema:
+
+```sql
+SELECT k.nome,
+       count(*) FILTER (WHERE n.avaliacao = 'like')    AS boas,
+       count(*) FILTER (WHERE n.avaliacao = 'neutro')  AS neutras,
+       count(*) FILTER (WHERE n.avaliacao = 'dislike') AS mas,
+       count(*) FILTER (WHERE n.avaliacao IS NULL)     AS nao_avaliadas
+FROM noticia n JOIN key_account k ON k.id = n.key_account_id
+GROUP BY k.nome;
+```
+
+---
+
+## 16. Assistente (chat por carteira)
+
+Segue o padrão do `chatbot-ai-study` do autor — `ChatPromptTemplate` +
+LangChain — com Groq (`openai/gpt-oss-120b`) no lugar do Ollama.
+
+**Por que Groq e não Ollama:** um chat precisa responder em segundos, e o
+`llama3.2` local leva dezenas deles. É a única parte do projeto que usa
+modelo na nuvem — e a única que manda dados para fora. Sem
+`GROQ_API_KEY` a aba responde **503** com aviso, em vez de quebrar.
+
+### Escopo: só a carteira
+
+`chat_context.py` é a fronteira. Tudo o que o modelo vê sai de
+`montar_contexto()`, que junta, **só da carteira escolhida**:
+
+1. o nome da carteira;
+2. os clientes (nome e status);
+3. a temperatura por empresa (boas/neutras/más/não avaliadas);
+4. as últimas `CHAT_MAX_NOTICIAS` notícias, com `[id]`, fonte, data e
+   avaliação — **sem a URL**.
+
+`test_contexto_nao_vaza_outra_carteira` guarda isso.
+
+**A URL fica fora do contexto de propósito** — é a mesma armadilha da §11.
+A URL do Google News tem 200+ chars em base64 e é só um redirect: numa
+carteira real, 25 notícias somavam 11.5k chars de URL contra 2k de texto
+(69% do prompt) e a Groq recusava o request com **413** (`Request too
+large ... tokens per minute`). O modelo cita a notícia pelo `[id]` e pela
+fonte. `test_contexto_nao_leva_url_ao_modelo` guarda isso.
+
+**Erro do provedor nunca vira 500.** `_invocar()` (em `chat_service.py`)
+envolve as duas chamadas ao modelo e traduz qualquer falha em
+`ChatError` — que o router devolve como **502**. Os status de
+`STATUS_EXCEDEU_COTA` (413, 429) ganham mensagem acionável: uma conversa
+longa volta a estourar a cota mesmo sem as URLs, e o KAM precisa saber
+que a saída é começar outra conversa.
+
+### Ferramentas de internet
+
+O modelo decide quando usar; `chat_tools.py` decide o que é permitido.
+
+- `BuscarNoticias(empresa)` — reusa `fetch_rss_items`. **Só aceita
+  clientes da carteira**; qualquer outro nome volta como erro para o
+  modelo, com a lista do que existe.
+- `LerPagina(url)` — baixa e extrai o texto com BeautifulSoup.
+
+**Guarda de SSRF (obrigatória):** `_host_e_publico()` resolve o host e
+recusa tudo que não for `ip.is_global` — loopback, rede privada,
+link-local, reservado, multicast. Sem isso, o modelo poderia fazer o
+servidor buscar o Postgres, o Ollama ou o metadata da nuvem. Não protege
+contra DNS rebinding, o que é aceitável para ferramenta interna e
+autenticada. `test_chat_tools.py` cobre a lista de endereços bloqueados.
+
+**Redirects passam pela mesma guarda.** O cliente roda com
+`follow_redirects=False` e `_baixar()` segue os saltos à mão (até
+`MAX_REDIRECTS = 5`), validando cada `Location`. Com o redirect
+automático do httpx só a primeira URL era checada: uma página pública
+respondendo `302 → http://ollama:11434/` furava a guarda. O corpo é lido
+em stream e corta em `MAX_BYTES`, sem carregar a página inteira na
+memória. `test_ler_pagina_bloqueia_redirect_para_rede_interna` guarda
+isso.
+
+`MAX_RODADAS_TOOL = 1`: o modelo pede, executamos, ele responde. Sem teto
+a conversa poderia entrar em laço e a latência estourar.
+
+### Texto do usuário nunca é template
+
+`montar_mensagens()` templa **apenas** os dois `system`; histórico e
+pergunta entram como `HumanMessage`/`AIMessage`. Passá-los como template
+faria o LangChain interpretar `{}` e quebrar em qualquer pergunta com
+chaves — `test_pergunta_com_chaves_nao_quebra_o_template` guarda isso.
+
+### Markdown na bolha do assistente
+
+O modelo responde em Markdown — títulos, listas, negrito e **tabelas**
+(ele gosta de tabelar a temperatura). Mostrar isso cru enchia a bolha de
+`###` e `**`, então `mdToHtml()` (no `index.html`) converte para HTML.
+
+- **Todo texto passa por `esc()` antes de virar HTML.** A resposta pode
+  carregar trechos de páginas que a `LerPagina` baixou — conteúdo de
+  terceiros. O parser monta as tags e o conteúdo entra sempre escapado.
+  É também por isso que **não** usamos uma lib de Markdown de CDN: as
+  populares aceitam HTML embutido por padrão, o que reabriria o furo.
+- Links só viram `<a>` se casarem `https?://` — um `javascript:` vindo
+  do modelo fica como texto.
+- **Só a mensagem do assistente é convertida.** A pergunta do KAM
+  continua `esc()` + `pre-wrap`, para um `**` digitado por ele não virar
+  negrito.
+- `.msg-bot` desliga o `white-space:pre-wrap` de `.msg` (os blocos já
+  trazem o espaçamento) e é mais largo, porque ali cabem tabelas.
+
+### Conversas e expurgo
+
+`conversa` (user + carteira) e `mensagem` (papel, conteúdo, `fontes` em
+JSON). `atualizada_em` move a cada troca; `purgar_conversas()` apaga o
+que passou de `CHAT_HISTORY_DAYS` (7) e roda no `GET /chat/conversas/`.
+Conversa velha mas **em uso** não é apagada, porque conversar renova o
+prazo.

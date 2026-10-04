@@ -25,6 +25,18 @@ def test_read_portfolio(client, seeded, admin_token):
     assert sorted(body['companies']) == sorted(PORTFOLIOS['Mayra'])
 
 
+def test_portfolio_traz_key_accounts_com_id(client, seeded, admin_token):
+    """O frontend precisa do id para mandar no POST /news/ — o nome
+    sozinho é ambíguo para o admin."""
+    response = client.get('/portfolios/Mayra/', headers=auth(admin_token))
+    assert response.status_code == HTTPStatus.OK
+    body = response.json()
+
+    nomes = [k['nome'] for k in body['key_accounts']]
+    assert nomes == body['companies']
+    assert all(isinstance(k['id'], int) for k in body['key_accounts'])
+
+
 def test_read_portfolio_not_found(client, admin_token):
     response = client.get(
         '/portfolios/Inexistente/', headers=auth(admin_token)
